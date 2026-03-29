@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset Cache</title>
+<style>
+body { background: #121212; color: white; font-family: system-ui; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.box { text-align: center; padding: 2rem; }
+h1 { color: #1DB954; }
+#status { margin: 1rem 0; color: #b3b3b3; white-space: pre-line; }
+a { color: #1DB954; text-decoration: none; display: inline-block; margin-top: 1rem; padding: 12px 24px; border: 1px solid #1DB954; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Resetting Cache...</h1>
+<div id="status">Please wait...</div>
+<script>
+async function resetAll() {
+  const status = document.getElementById('status');
+  let swCount = 0, cacheCount = 0;
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) await reg.unregister();
+      swCount = regs.length;
+    }
+  } catch(e) {}
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (const key of keys) await caches.delete(key);
+      cacheCount = keys.length;
+    }
+  } catch(e) {}
+  try { localStorage.clear(); } catch(e) {}
+  try { sessionStorage.clear(); } catch(e) {}
+  status.innerHTML = '<b style="color:#1DB954">Cache cleared!</b><br>SW: ' + swCount + ' removed<br>Caches: ' + cacheCount + ' cleared';
+  status.innerHTML += '<br><br><a href="./index.html">Open App</a>';
+}
+resetAll();
+</script>
+</div>
+</body>
+</html>

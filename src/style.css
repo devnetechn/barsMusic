@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-spotify-green: #1DB954;
+  --color-spotify-green-hover: #1ed760;
+  --color-spotify-black: #121212;
+  --color-spotify-dark: #181818;
+  --color-spotify-card: #282828;
+  --color-spotify-light: #b3b3b3;
+  --color-spotify-lighter: #535353;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  background: #121212;
+  /* iOS safe areas */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Prevent iOS bounce/rubber-band scrolling on the body */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Only allow scroll inside main content areas */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Slide up animation for modals */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+::-webkit-scrollbar-thumb {
+  background: #535353;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b3b3b3;
+}
