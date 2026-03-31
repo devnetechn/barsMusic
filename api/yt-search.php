@@ -100,12 +100,11 @@ function parseDuration($text) {
 
 // Fallback if InnerTube fails
 function ytdlpSearch($query) {
-    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-    $python = $isWindows ? 'python' : 'python3';
-    $devnull = $isWindows ? 'NUL' : '/dev/null';
+    $python = getPythonCmd();
+    $devnull = getDevNull();
     $cmd = sprintf(
         '%s -m yt_dlp "ytsearch10:%s" --flat-playlist --dump-json --no-warnings 2>%s',
-        $python,
+        escapeshellarg($python),
         str_replace('"', '', $query),
         $devnull
     );

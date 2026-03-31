@@ -129,3 +129,30 @@ function ensureAdmin() {
     }
 }
 ensureAdmin();
+
+// Python path helper - auto-detect or use full path for Windows services
+function getPythonCmd() {
+    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    if (!$isWindows) return 'python3';
+
+    // Try common Python install locations for Windows
+    $paths = [
+        'python',
+        'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+        'C:\\Python312\\python.exe',
+        'C:\\Python311\\python.exe',
+        'C:\\Python310\\python.exe',
+    ];
+
+    foreach ($paths as $p) {
+        $out = [];
+        exec(escapeshellarg($p) . ' --version 2>&1', $out, $ret);
+        if ($ret === 0) return $p;
+    }
+
+    return 'python'; // fallback
+}
+
+function getDevNull() {
+    return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'NUL' : '/dev/null';
+}

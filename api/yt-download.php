@@ -51,17 +51,16 @@ $outputPath = $musicDir . $outputFile;
 if (!file_exists($outputPath)) {
     // Download from YouTube
     $url = 'https://www.youtube.com/watch?v=' . $videoId;
-    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-    $python = $isWindows ? 'python' : 'python3';
-    $devnull = $isWindows ? 'NUL' : '/dev/null';
+    $python = getPythonCmd();
 
     // Build yt-dlp command (ffmpeg-location only if custom path exists)
+    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
     $ffmpegDir = $isWindows ? 'C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes' : '';
     $ffmpegArg = (!empty($ffmpegDir) && is_dir($ffmpegDir)) ? '--ffmpeg-location ' . escapeshellarg($ffmpegDir) : '';
 
     $cmd = sprintf(
         '%s -m yt_dlp %s -x --audio-format mp3 --audio-quality 0 --no-playlist --no-warnings -o %s %s 2>&1',
-        $python,
+        escapeshellarg($python),
         $ffmpegArg,
         escapeshellarg($outputPath),
         escapeshellarg($url)
