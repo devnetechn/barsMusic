@@ -14,9 +14,14 @@ if (empty($videoId) || !preg_match('/^[a-zA-Z0-9_-]{11}$/', $videoId)) {
 $url = 'https://www.youtube.com/watch?v=' . $videoId;
 
 // Get best audio stream URL using yt-dlp
+$isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+$python = $isWindows ? 'python' : 'python3';
+$devnull = $isWindows ? 'NUL' : '/dev/null';
 $cmd = sprintf(
-    'python -m yt_dlp -f bestaudio --get-url --no-warnings %s 2>NUL',
-    escapeshellarg($url)
+    '%s -m yt_dlp -f bestaudio --get-url --no-warnings %s 2>%s',
+    $python,
+    escapeshellarg($url),
+    $devnull
 );
 
 $output = [];
