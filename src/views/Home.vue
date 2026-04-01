@@ -445,7 +445,7 @@ async function doDownload(video) {
     })
   })
   const data = await res.json()
-  if (!data.success) throw new Error((data.error || 'Unknown') + (data.details ? ' | ' + data.details : ''))
+  if (!data.success) throw new Error(JSON.stringify(data))
 
   const audioRes = await fetchMusic(data.url)
 

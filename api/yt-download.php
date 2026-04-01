@@ -84,7 +84,10 @@ if (!file_exists($outputPath)) {
         http_response_code(500);
         echo json_encode([
             'error' => 'Download failed',
-            'details' => implode("\n", array_slice($output, -3))
+            'details' => implode("\n", array_slice($output, -3)),
+            '_debug_ffmpegDir' => $ffmpegDir,
+            '_debug_ffmpegArg' => $ffmpegArg,
+            '_debug_cmd' => $cmd
         ]);
         exit;
     }
