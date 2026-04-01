@@ -53,16 +53,17 @@ if (!file_exists($outputPath)) {
     $url = 'https://www.youtube.com/watch?v=' . $videoId;
     $python = getPythonCmd();
 
-    // Build yt-dlp command (ffmpeg-location only if custom path exists)
-    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-    $ffmpegDir = '';
-    if ($isWindows) {
-        // Try paths that have both ffmpeg AND ffprobe
-        $candidates = glob('C:\\Users\\*\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg*\\ffmpeg-*\\bin');
-        if (!empty($candidates)) {
-            $ffmpegDir = $candidates[0];
-        } elseif (is_dir('C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes')) {
-            $ffmpegDir = 'C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes';
+    // Build yt-dlp command - use local bin/ ffmpeg first
+    $ffmpegDir = __DIR__ . '/../bin';
+    if (!file_exists($ffmpegDir . '/ffmpeg.exe') && !file_exists($ffmpegDir . '/ffmpeg')) {
+        // Fallback: search system installs
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $ffmpegDir = '';
+        if ($isWindows) {
+            $candidates = glob('C:\\Users\\*\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg*\\ffmpeg-*\\bin');
+            if (!empty($candidates)) {
+                $ffmpegDir = $candidates[0];
+            }
         }
     }
     $ffmpegArg = (!empty($ffmpegDir) && is_dir($ffmpegDir)) ? '--ffmpeg-location ' . escapeshellarg($ffmpegDir) : '';
