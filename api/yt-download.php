@@ -55,7 +55,16 @@ if (!file_exists($outputPath)) {
 
     // Build yt-dlp command (ffmpeg-location only if custom path exists)
     $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-    $ffmpegDir = $isWindows ? 'C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes' : '';
+    $ffmpegDir = '';
+    if ($isWindows) {
+        // Try paths that have both ffmpeg AND ffprobe
+        $candidates = glob('C:\\Users\\*\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg*\\ffmpeg-*\\bin');
+        if (!empty($candidates)) {
+            $ffmpegDir = $candidates[0];
+        } elseif (is_dir('C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes')) {
+            $ffmpegDir = 'C:\\Program Files\\Wondershare\\UniConverter 15\\DownloadRes';
+        }
+    }
     $ffmpegArg = (!empty($ffmpegDir) && is_dir($ffmpegDir)) ? '--ffmpeg-location ' . escapeshellarg($ffmpegDir) : '';
 
     $cmd = sprintf(
