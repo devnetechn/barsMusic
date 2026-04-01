@@ -412,6 +412,7 @@ async function downloadAndPlayFeatured(video) {
     player.playSong(saved, [saved], 0)
   } catch (err) {
     video.downloading = false
+    alert('Download failed: ' + err.message)
     console.error('Download+play failed:', err)
   }
 }
@@ -426,6 +427,7 @@ async function downloadFeatured(video) {
     songs.value.push(saved)
   } catch (err) {
     video.downloading = false
+    alert('Download failed: ' + err.message)
     console.error('Download failed:', err)
   }
 }
