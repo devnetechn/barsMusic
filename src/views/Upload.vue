@@ -101,7 +101,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { saveSong, getAllSongs, songExists, getStorageEstimate } from '../utils/db'
-import { api } from '../utils/api'
+import { api, fetchMusic } from '../utils/api'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
@@ -222,8 +222,7 @@ async function syncFromServer() {
     for (const song of newSongs) {
       try {
         // Download the audio file from server - use relative URL
-        const audioRes = await fetch(song.url)
-        if (!audioRes.ok) throw new Error('Download failed')
+        const audioRes = await fetchMusic(song.url)
 
         const audioBlob = await audioRes.blob()
 

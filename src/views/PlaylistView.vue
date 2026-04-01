@@ -76,7 +76,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { saveSong, getAudioBlob } from '../utils/db'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
-import { api } from '../utils/api'
+import { api, fetchMusic } from '../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -183,8 +183,8 @@ async function downloadAll() {
       const data = await res.json()
       if (data.success) {
         // Save to IndexedDB for offline
-        const audioRes = await fetch(data.url)
-        if (audioRes.ok) {
+        const audioRes = await fetchMusic(data.url).catch(() => null)
+        if (audioRes) {
           const blob = await audioRes.blob()
           await saveSong({
             title: item.title,

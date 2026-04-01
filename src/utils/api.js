@@ -1,3 +1,16 @@
+// Fetch a music file - tries proxy path first, falls back to direct path
+export async function fetchMusic(serverUrl) {
+  // serverUrl is like /bars/music/filename.mp3
+  let res = await fetch(serverUrl)
+  if (!res.ok) {
+    // Fallback: try direct path (for Vite dev server serving static files)
+    const directPath = serverUrl.replace('/bars/music/', '/music/')
+    res = await fetch(directPath)
+  }
+  if (!res.ok) throw new Error('Failed to fetch music file')
+  return res
+}
+
 // Wrapper around fetch that always includes credentials + auth token
 export async function api(url, options = {}) {
   const token = localStorage.getItem('bars_token')

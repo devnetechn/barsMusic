@@ -221,7 +221,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getAllSongs, saveSong, searchSongs } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
-import { api } from '../utils/api'
+import { api, fetchMusic } from '../utils/api'
 import { Howl } from 'howler'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
 
@@ -445,8 +445,7 @@ async function doDownload(video) {
   const data = await res.json()
   if (!data.success) throw new Error(data.error)
 
-  const audioRes = await fetch(data.url)
-  if (!audioRes.ok) throw new Error('Failed to fetch')
+  const audioRes = await fetchMusic(data.url)
 
   const audioBlob = await audioRes.blob()
   return await saveSong({

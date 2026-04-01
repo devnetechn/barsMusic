@@ -281,7 +281,7 @@
 import { ref, reactive } from "vue";
 import { searchSongs, getAllSongs, saveSong } from "../utils/db";
 import { usePlayerStore } from "../stores/player";
-import { api } from "../utils/api";
+import { api, fetchMusic } from "../utils/api";
 import { useAuthStore } from "../stores/auth";
 import AddToPlaylist from "../components/AddToPlaylist.vue";
 
@@ -410,8 +410,7 @@ async function playSong(song, index) {
 async function downloadServerSong(song) {
   song.downloading = true;
   try {
-    const audioRes = await fetch(song.url);
-    if (!audioRes.ok) throw new Error("Download failed");
+    const audioRes = await fetchMusic(song.url);
     const audioBlob = await audioRes.blob();
     const metadata = {
       title: song.title,
@@ -451,8 +450,7 @@ async function downloadFromYT(video) {
     if (!data.success) throw new Error(data.error || "Download failed");
 
     // Step 2: Fetch the MP3 from server and save to IndexedDB
-    const audioRes = await fetch(data.url);
-    if (!audioRes.ok) throw new Error("Failed to fetch audio file");
+    const audioRes = await fetchMusic(data.url);
 
     const audioBlob = await audioRes.blob();
     const metadata = {
