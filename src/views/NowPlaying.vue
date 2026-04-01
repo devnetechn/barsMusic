@@ -179,7 +179,7 @@ async function fetchLyrics() {
       title: song.title || '',
       artist: song.artist || ''
     })
-    const res = await api(`../api/lyrics.php?${params}`)
+    const res = await api(`/bars/api/lyrics.php?${params}`)
     const data = await res.json()
     lyricsData.value = data.lyrics || null
   } catch {

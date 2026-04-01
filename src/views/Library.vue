@@ -260,7 +260,7 @@ async function confirmDelete(song) {
 async function createPlaylist() {
   if (!newPlaylistName.value.trim()) return
   try {
-    await api('../api/playlists.php', {
+    await api('/bars/api/playlists.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'create', name: newPlaylistName.value.trim() })
@@ -273,7 +273,7 @@ async function createPlaylist() {
 
 async function loadPlaylists() {
   try {
-    const res = await api('../api/playlists.php')
+    const res = await api('/bars/api/playlists.php')
     const data = await res.json()
     playlists.value = data.playlists || []
   } catch {
@@ -287,7 +287,7 @@ onMounted(async () => {
 
   // Also load from server and merge
   try {
-    const res = await api('../api/songs.php')
+    const res = await api('/bars/api/songs.php')
     const data = await res.json()
     const serverSongs = data.songs || []
     const localFilenames = new Set(localSongs.map(s => s.filename))
@@ -301,7 +301,7 @@ onMounted(async () => {
         filename: s.filename,
         cover: s.cover,
         size: s.size,
-        url: `../music/${s.filename}`,
+        url: `/bars/music/${s.filename}`,
         addedAt: s.created_at
       }))
     ]

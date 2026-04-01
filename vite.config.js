@@ -8,10 +8,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': {
+      '/bars/api': {
         target: 'http://localhost',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/bars/api')
+        changeOrigin: true
+      },
+      '/bars/music': {
+        target: 'http://localhost',
+        changeOrigin: true
       }
     }
   },

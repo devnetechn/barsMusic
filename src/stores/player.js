@@ -67,7 +67,7 @@ export const usePlayerStore = defineStore('player', {
 
       // Record play history (fire and forget)
       import('../utils/api').then(({ api: apiFn }) => {
-        apiFn('../api/history.php', {
+        apiFn('/bars/api/history.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -84,11 +84,11 @@ export const usePlayerStore = defineStore('player', {
 
       if (blob) {
         url = URL.createObjectURL(blob)
-      } else if (song.filename) {
-        // Fallback: try to play from server music folder
-        url = `../music/${song.filename}`
       } else if (song.url) {
         url = song.url
+      } else if (song.filename) {
+        // Fallback: try to play from server music folder
+        url = `/bars/music/${song.filename}`
       } else {
         return
       }
@@ -332,69 +332,98 @@ export const usePlayerStore = defineStore('player', {
           title: this.currentSong.title || '',
           artist: this.currentSong.artist || ''
         })
-        const res = await apiFn(`../api/related.php?${params}`)
+        const res = await apiFn(`/bars/api/related.php?${params}`)
         const data = await res.json()
         const results = data.results || []
         if (results.length === 0) return
 
-        const top = results.slice(0, 5)
-        const pick = top[Math.floor(Math.random() * top.length)]
+        // Try multiple candidates in case one fails
+        const shuffled = [...results.slice(0, 5)].sort(() => Math.random() - 0.5)
 
-        // Get stream URL
-        const streamRes = await apiFn(`../api/yt-stream.php?id=${pick.videoId}`)
-        const streamData = await streamRes.json()
-        if (!streamData.success) return
+        for (const pick of shuffled) {
+          try {
+            const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
+            const streamData = await streamRes.json()
+            if (!streamData.success) continue
 
-        this.stop()
+            this.stop()
 
-        const song = {
-          id: `yt_${pick.videoId}`,
-          title: pick.title,
-          artist: pick.author || this.currentSong.artist,
-          album: 'Auto-Play',
-          cover: pick.thumbnail
-        }
+            const song = {
+              id: `yt_${pick.videoId}`,
+              title: pick.title,
+              artist: pick.author || this.currentSong.artist,
+              album: 'Auto-Play',
+              cover: pick.thumbnail
+            }
 
-        this.currentSong = song
-        this.queue = []
-        this.queueIndex = -1
+            this.currentSong = song
+            this.queue = []
+            this.queueIndex = -1
 
-        this.howl = new Howl({
-          src: [streamData.url],
-          html5: true,
-          volume: this.isMuted ? 0 : this.volume,
-          onplay: () => {
-            this.isPlaying = true
-            this.duration = this.howl.duration()
-            this._startProgress()
-          },
-          onpause: () => {
-            this.isPlaying = false
-            this._stopProgress()
-          },
-          onstop: () => {
-            this.isPlaying = false
-            this._stopProgress()
-          },
-          onend: () => {
-            this._stopProgress()
-            this._autoPlayRelated()
-          },
-          onloaderror: (id, err) => {
-            console.error('Auto-play load error:', err)
+            // Try to play, with error recovery
+            const played = await new Promise((resolve) => {
+              this.howl = new Howl({
+                src: [streamData.url],
+                html5: true,
+                volume: this.isMuted ? 0 : this.volume,
+                onplay: () => {
+                  this.isPlaying = true
+                  this.duration = this.howl.duration()
+                  this._startProgress()
+                  resolve(true)
+                },
+                onpause: () => {
+                  this.isPlaying = false
+                  this._stopProgress()
+                },
+                onstop: () => {
+                  this.isPlaying = false
+                  this._stopProgress()
+                },
+                onend: () => {
+                  this._stopProgress()
+                  this._autoPlayRelated()
+                },
+                onloaderror: () => {
+                  console.error('Auto-play load error, trying next...')
+                  resolve(false)
+                },
+                onplayerror: () => {
+                  console.error('Auto-play play error, trying next...')
+                  resolve(false)
+                }
+              })
+
+              this.howl.play()
+
+              // Timeout: if nothing happens in 10s, try next
+              setTimeout(() => resolve(false), 10000)
+            })
+
+            if (played) {
+              if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                  title: song.title || 'Unknown',
+                  artist: song.artist || 'Unknown',
+                  album: 'Auto-Play',
+                  artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+                })
+              }
+              return // Successfully playing
+            }
+
+            // Failed, clean up and try next
+            if (this.howl) {
+              this.howl.unload()
+              this.howl = null
+            }
+          } catch {
+            continue
           }
-        })
-
-        this.howl.play()
-
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: song.title || 'Unknown',
-            artist: song.artist || 'Unknown',
-            album: 'Auto-Play',
-            artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
-          })
         }
+
+        // All candidates failed
+        this.isPlaying = false
       } catch (err) {
         console.error('Auto-play related failed:', err)
       }

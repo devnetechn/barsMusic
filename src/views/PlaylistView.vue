@@ -98,7 +98,7 @@ const downloadedItems = computed(() => items.value.filter(i => i.is_downloaded &
 
 async function loadPlaylist() {
   try {
-    const res = await api(`../api/playlists.php?id=${route.params.id}`)
+    const res = await api(`/bars/api/playlists.php?id=${route.params.id}`)
     const data = await res.json()
     playlist.value = data.playlist
     items.value = (data.playlist?.items || []).map(i => reactive({ ...i, _downloading: false }))
@@ -133,7 +133,7 @@ async function resolveAndPlay(song) {
   // YouTube song without filename — get stream URL first
   if (song.video_id && !song.filename) {
     try {
-      const res = await api(`../api/yt-stream.php?id=${song.video_id}`)
+      const res = await api(`/bars/api/yt-stream.php?id=${song.video_id}`)
       const data = await res.json()
       if (data.success) song.url = data.url
       else return null
@@ -170,7 +170,7 @@ async function downloadAll() {
   for (const item of toDownload) {
     item._downloading = true
     try {
-      const res = await api('../api/yt-download.php', {
+      const res = await api('/bars/api/yt-download.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -183,7 +183,7 @@ async function downloadAll() {
       const data = await res.json()
       if (data.success) {
         // Save to IndexedDB for offline
-        const audioRes = await fetch(`../${data.url.replace('/bars/', '')}`)
+        const audioRes = await fetch(data.url)
         if (audioRes.ok) {
           const blob = await audioRes.blob()
           await saveSong({
@@ -213,7 +213,7 @@ async function downloadAll() {
 
 async function removeItem(item) {
   try {
-    await api('../api/playlists.php', {
+    await api('/bars/api/playlists.php', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'remove_item', item_id: item.item_id })
@@ -224,7 +224,7 @@ async function removeItem(item) {
 
 async function confirmDelete() {
   if (confirm(`Delete playlist "${playlist.value.name}"?`)) {
-    await api('../api/playlists.php', {
+    await api('/bars/api/playlists.php', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete_playlist', id: playlist.value.id })

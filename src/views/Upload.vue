@@ -155,7 +155,7 @@ async function processFiles(files) {
       const formData = new FormData()
       formData.append('music', file)
       try {
-        await api('../api/upload.php', { method: 'POST', body: formData })
+        await api('/bars/api/upload.php', { method: 'POST', body: formData })
       } catch {
         // Server upload optional
       }
@@ -190,7 +190,7 @@ async function syncFromServer() {
 
   try {
     // Get ALL songs from server (admin sync)
-    const res = await api('../api/songs.php?sync')
+    const res = await api('/bars/api/songs.php?sync')
     const data = await res.json()
     const serverSongs = data.songs || []
 
@@ -222,7 +222,7 @@ async function syncFromServer() {
     for (const song of newSongs) {
       try {
         // Download the audio file from server - use relative URL
-        const audioRes = await fetch(`../${song.url.replace('/bars/', '')}`)
+        const audioRes = await fetch(song.url)
         if (!audioRes.ok) throw new Error('Download failed')
 
         const audioBlob = await audioRes.blob()

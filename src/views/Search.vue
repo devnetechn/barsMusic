@@ -355,7 +355,7 @@ async function doSearch(q) {
   ytLoading.value = true;
 
   const serverPromise = auth.isAdmin
-    ? api(`../api/songs.php?q=${encodeURIComponent(q)}`)
+    ? api(`/bars/api/songs.php?q=${encodeURIComponent(q)}`)
         .then((res) => res.json())
         .then((data) => {
           if (searchVersion !== version) return;
@@ -376,7 +376,7 @@ async function doSearch(q) {
         serverLoading.value = false;
       });
 
-  const ytPromise = api(`../api/yt-search.php?q=${encodeURIComponent(q)}`)
+  const ytPromise = api(`/bars/api/yt-search.php?q=${encodeURIComponent(q)}`)
     .then((res) => res.json())
     .then((ytData) => {
       if (searchVersion !== version) return;
@@ -410,7 +410,7 @@ async function playSong(song, index) {
 async function downloadServerSong(song) {
   song.downloading = true;
   try {
-    const audioRes = await fetch(`../${song.url.replace("/bars/", "")}`);
+    const audioRes = await fetch(song.url);
     if (!audioRes.ok) throw new Error("Download failed");
     const audioBlob = await audioRes.blob();
     const metadata = {
@@ -436,7 +436,7 @@ async function downloadFromYT(video) {
   video.error = false;
   try {
     // Step 1: Tell server to download from YouTube as MP3
-    const res = await api("../api/yt-download.php", {
+    const res = await api("/bars/api/yt-download.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -451,7 +451,7 @@ async function downloadFromYT(video) {
     if (!data.success) throw new Error(data.error || "Download failed");
 
     // Step 2: Fetch the MP3 from server and save to IndexedDB
-    const audioRes = await fetch(`../${data.url.replace("/bars/", "")}`);
+    const audioRes = await fetch(data.url);
     if (!audioRes.ok) throw new Error("Failed to fetch audio file");
 
     const audioBlob = await audioRes.blob();
@@ -480,7 +480,7 @@ async function streamFromYT(video) {
   video.streaming = true;
   video.error = false;
   try {
-    const res = await api(`../api/yt-stream.php?id=${video.videoId}`);
+    const res = await api(`/bars/api/yt-stream.php?id=${video.videoId}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
@@ -510,7 +510,10 @@ async function streamFromYT(video) {
       },
       onpause: () => { player.isPlaying = false; player._stopProgress(); },
       onend: () => { player._stopProgress(); player.isPlaying = false; },
-      onloaderror: () => { console.error('Stream load error'); }
+      onloaderror: () => { player.isPlaying = false; player._stopProgress(); console.error('Stream load error'); },
+      onplayerror: () => {
+        player.howl.once('unlock', () => player.howl.play());
+      }
     });
     player.howl.play();
 
@@ -534,7 +537,7 @@ async function downloadAndPlay(video) {
   video.downloading = true;
   video.error = false;
   try {
-    const res = await api("../api/yt-download.php", {
+    const res = await api("/bars/api/yt-download.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -548,7 +551,7 @@ async function downloadAndPlay(video) {
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Download failed");
 
-    const audioRes = await fetch(`../${data.url.replace("/bars/", "")}`);
+    const audioRes = await fetch(data.url);
     if (!audioRes.ok) throw new Error("Failed to fetch");
 
     const audioBlob = await audioRes.blob();

@@ -327,7 +327,7 @@ async function loadFeatured() {
 async function fetchFeatured() {
   featuredLoading.value = true
   try {
-    const res = await api('../api/featured.php')
+    const res = await api('/bars/api/featured.php')
     const data = await res.json()
     const results = data.results || []
 
@@ -356,7 +356,7 @@ function refreshFeatured() {
 async function streamFeatured(video) {
   video.streaming = true
   try {
-    const res = await api(`../api/yt-stream.php?id=${video.videoId}`)
+    const res = await api(`/bars/api/yt-stream.php?id=${video.videoId}`)
     const data = await res.json()
     if (!data.success) throw new Error(data.error)
 
@@ -380,6 +380,11 @@ async function streamFeatured(video) {
       },
       onpause: () => { player.isPlaying = false; player._stopProgress() },
       onend: () => { player._stopProgress(); player.isPlaying = false },
+      onloaderror: () => { player.isPlaying = false; player._stopProgress(); console.error('Stream load error') },
+      onplayerror: () => {
+        // Retry once on play error (browser autoplay policy)
+        player.howl.once('unlock', () => player.howl.play())
+      }
     })
     player.howl.play()
 
@@ -427,7 +432,7 @@ async function downloadFeatured(video) {
 
 // Shared download logic
 async function doDownload(video) {
-  const res = await api('../api/yt-download.php', {
+  const res = await api('/bars/api/yt-download.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -440,7 +445,7 @@ async function doDownload(video) {
   const data = await res.json()
   if (!data.success) throw new Error(data.error)
 
-  const audioRes = await fetch(`../${data.url.replace('/bars/', '')}`)
+  const audioRes = await fetch(data.url)
   if (!audioRes.ok) throw new Error('Failed to fetch')
 
   const audioBlob = await audioRes.blob()
@@ -461,7 +466,7 @@ onMounted(async () => {
 
   // Also load songs from server and merge
   try {
-    const res = await api('../api/songs.php')
+    const res = await api('/bars/api/songs.php')
     const data = await res.json()
     const serverSongs = data.songs || []
 
@@ -482,7 +487,7 @@ onMounted(async () => {
         filename: s.filename,
         cover: s.cover,
         size: s.size,
-        url: `../music/${s.filename}`,
+        url: `/bars/music/${s.filename}`,
         addedAt: s.created_at
       }))
     ]
@@ -504,7 +509,7 @@ onMounted(async () => {
         filename: s.filename,
         cover: s.cover,
         size: s.size,
-        url: `../music/${s.filename}`,
+        url: `/bars/music/${s.filename}`,
         addedAt: s.created_at
       }))
     ]
@@ -515,7 +520,7 @@ onMounted(async () => {
 
   // Load recently played from API
   try {
-    const res = await api('../api/history.php?limit=10')
+    const res = await api('/bars/api/history.php?limit=10')
     const data = await res.json()
     if (data.success && Array.isArray(data.history)) {
       recentlyPlayed.value = data.history
@@ -526,7 +531,7 @@ onMounted(async () => {
 
   // Load top artists for Made For You mixes
   try {
-    const res = await api('../api/history.php?type=top_artists&limit=4')
+    const res = await api('/bars/api/history.php?type=top_artists&limit=4')
     const data = await res.json()
     if (data.success && Array.isArray(data.artists)) {
       topMixes.value = data.artists

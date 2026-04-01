@@ -135,7 +135,7 @@ watch(() => props.show, async (val) => {
     }
 
     try {
-      const res = await api('../api/playlists.php')
+      const res = await api('/bars/api/playlists.php')
       const data = await res.json()
       playlists.value = data.playlists || []
       // Update targetPlaylist name if we have playlistId
@@ -152,7 +152,7 @@ async function loadLibrarySongs() {
   const local = await getAllSongs()
   // Also load from server
   try {
-    const res = await api('../api/songs.php')
+    const res = await api('/bars/api/songs.php')
     const data = await res.json()
     const serverSongs = data.songs || []
     const localFilenames = new Set(local.map(s => s.filename))
@@ -175,7 +175,7 @@ async function loadLibrarySongs() {
 async function createAndAdd() {
   if (!newName.value.trim()) return
   try {
-    const res = await api('../api/playlists.php', {
+    const res = await api('/bars/api/playlists.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'create', name: newName.value.trim() })
@@ -192,7 +192,7 @@ async function createAndAdd() {
       }
       newName.value = ''
       // Refresh list
-      const res2 = await api('../api/playlists.php')
+      const res2 = await api('/bars/api/playlists.php')
       const data2 = await res2.json()
       playlists.value = data2.playlists || []
     }
@@ -204,7 +204,7 @@ async function addSongToPlaylist(playlistId) {
   if (s) {
     // Adding a specific song (from search/context menu)
     try {
-      await api('../api/playlists.php', {
+      await api('/bars/api/playlists.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +239,7 @@ async function addLibrarySong(song) {
   if (!plId) return
 
   try {
-    await api('../api/playlists.php', {
+    await api('/bars/api/playlists.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

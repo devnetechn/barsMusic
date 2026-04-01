@@ -16,17 +16,24 @@ $url = 'https://www.youtube.com/watch?v=' . $videoId;
 // Get best audio stream URL using yt-dlp
 $python = getPythonCmd();
 $devnull = getDevNull();
-$cmd = sprintf(
-    '%s -m yt_dlp -f bestaudio --get-url --no-warnings %s 2>%s',
-    escapeshellarg($python),
-    escapeshellarg($url),
-    $devnull
-);
+// Try m4a/mp4 first (best browser compatibility), then fall back to bestaudio
+$formats = ['bestaudio[ext=m4a]', 'bestaudio[ext=mp4]', 'bestaudio[acodec=aac]', 'bestaudio'];
+$streamUrl = '';
 
-$output = [];
-exec($cmd, $output);
+foreach ($formats as $fmt) {
+    $cmd = sprintf(
+        '%s -m yt_dlp -f %s --get-url --no-warnings %s 2>%s',
+        escapeshellarg($python),
+        escapeshellarg($fmt),
+        escapeshellarg($url),
+        $devnull
+    );
 
-$streamUrl = trim($output[0] ?? '');
+    $output = [];
+    exec($cmd, $output);
+    $streamUrl = trim($output[0] ?? '');
+    if (!empty($streamUrl)) break;
+}
 
 if (empty($streamUrl)) {
     http_response_code(500);

@@ -469,7 +469,7 @@ async function fetchLyrics() {
 
   try {
     const params = new URLSearchParams({ title: song.title || '', artist: song.artist || '' })
-    const res = await api(`../api/lyrics.php?${params}`)
+    const res = await api(`/bars/api/lyrics.php?${params}`)
     const data = await res.json()
     if (data.lyrics) {
       lyricsText.value = data.lyrics.text || null
