@@ -149,7 +149,7 @@
     </div>
 
     <!-- Add to Playlist Modal -->
-    <AddToPlaylist v-if="showAddToPlaylist" :song="contextSong"
+    <AddToPlaylist :show="showAddToPlaylist" :song="contextSong"
       @close="showAddToPlaylist = false; contextSong = null" />
   </div>
 </template>

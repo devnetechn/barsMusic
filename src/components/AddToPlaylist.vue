@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 bg-black/60 z-[65] flex items-end justify-center"
+  <div v-if="show" class="fixed inset-0 bg-black/60 z-[95] flex items-end justify-center"
     @click.self="$emit('close')">
     <div class="bg-spotify-dark rounded-t-xl w-full max-w-lg max-h-[70vh] flex flex-col animate-slide-up"
       style="padding-bottom: env(safe-area-inset-bottom)">
