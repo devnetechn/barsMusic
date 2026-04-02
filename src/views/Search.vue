@@ -281,7 +281,7 @@
 import { ref, reactive } from "vue";
 import { searchSongs, getAllSongs, saveSong } from "../utils/db";
 import { usePlayerStore } from "../stores/player";
-import { api, fetchMusic } from "../utils/api";
+import { api, fetchMusic, autoDownload } from "../utils/api";
 import { useAuthStore } from "../stores/auth";
 import AddToPlaylist from "../components/AddToPlaylist.vue";
 
@@ -524,6 +524,8 @@ async function streamFromYT(video) {
     }
 
     video.streaming = false;
+    // Auto-download in background
+    autoDownload(video.videoId, video.title, video.author, video.thumbnail);
   } catch (err) {
     video.streaming = false;
     video.error = true;

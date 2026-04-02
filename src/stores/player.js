@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { Howl } from 'howler'
 import { getAudioBlob } from '../utils/db'
+import { autoDownload } from '../utils/api'
 
 export const usePlayerStore = defineStore('player', {
   state: () => ({
@@ -417,6 +418,8 @@ export const usePlayerStore = defineStore('player', {
                   artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
                 })
               }
+              // Auto-download in background
+              autoDownload(pick.videoId, pick.title, pick.author || '', pick.thumbnail)
               return // Successfully playing
             }
 

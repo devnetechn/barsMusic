@@ -83,7 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { saveSong, getAudioBlob } from '../utils/db'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
-import { api, fetchMusic } from '../utils/api'
+import { api, fetchMusic, autoDownload } from '../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,7 +167,11 @@ async function resolveAndPlay(song) {
     try {
       const res = await api(`/bars/api/yt-stream.php?id=${song.video_id}`)
       const data = await res.json()
-      if (data.success) song.url = data.url
+      if (data.success) {
+        song.url = data.url
+        // Auto-download in background
+        autoDownload(song.video_id, song.title, song.artist, song.cover)
+      }
       else return null
     } catch { return null }
   }

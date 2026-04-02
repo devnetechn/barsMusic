@@ -1,3 +1,43 @@
+import { saveSong, getAudioBlob } from './db'
+
+// Auto-download a YouTube stream in background so next play is instant
+const _downloading = new Set()
+export async function autoDownload(videoId, title, artist, cover) {
+  if (!videoId || _downloading.has(videoId)) return
+  // Check if already downloaded
+  const existing = await getAudioBlob(`yt_${videoId}`).catch(() => null)
+  if (existing) return
+
+  _downloading.add(videoId)
+  try {
+    const res = await api('/bars/api/yt-download.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId, title, artist, cover })
+    })
+    const data = await res.json()
+    if (!data.success) return
+
+    // Fetch the downloaded file and save to IndexedDB
+    const audioRes = await fetchMusic(data.url)
+    const blob = await audioRes.blob()
+    await saveSong({
+      id: `yt_${videoId}`,
+      title, artist,
+      album: 'YouTube',
+      filename: data.filename,
+      size: data.size || blob.size,
+      type: 'audio/mpeg',
+      cover
+    }, blob)
+    console.log('Auto-downloaded:', title)
+  } catch (err) {
+    console.error('Auto-download failed:', err)
+  } finally {
+    _downloading.delete(videoId)
+  }
+}
+
 // Fetch a music file - tries proxy path first, falls back to direct path
 export async function fetchMusic(serverUrl) {
   // serverUrl is like /bars/music/filename.mp3

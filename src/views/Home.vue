@@ -221,7 +221,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getAllSongs, saveSong, searchSongs } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
-import { api, fetchMusic } from '../utils/api'
+import { api, fetchMusic, autoDownload } from '../utils/api'
 import { Howl } from 'howler'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
 
@@ -395,6 +395,8 @@ async function streamFeatured(video) {
       })
     }
     video.streaming = false
+    // Auto-download in background for next time
+    autoDownload(video.videoId, video.title, video.author, video.thumbnail)
   } catch (err) {
     video.streaming = false
     console.error('Stream failed:', err)
