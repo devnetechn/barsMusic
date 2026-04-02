@@ -53,8 +53,10 @@
       <router-link v-for="playlist in playlists" :key="playlist.id"
         :to="`/playlist/${playlist.id}`"
         class="flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors">
-        <div class="w-14 h-14 bg-gradient-to-br from-purple-700 to-blue-900 rounded flex-shrink-0 flex items-center justify-center shadow">
-          <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+        <div class="w-14 h-14 rounded flex-shrink-0 flex items-center justify-center shadow overflow-hidden"
+          :class="playlist.cover ? '' : 'bg-gradient-to-br from-purple-700 to-blue-900'">
+          <img v-if="playlist.cover" :src="playlist.cover" class="w-full h-full object-cover" />
+          <svg v-else class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-base font-medium text-white truncate">{{ playlist.name }}</p>

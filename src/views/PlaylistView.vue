@@ -2,9 +2,16 @@
   <div class="p-4 md:p-6" v-if="playlist">
     <!-- Header -->
     <div class="flex items-end gap-4 mb-6">
-      <div class="w-32 h-32 md:w-48 md:h-48 bg-spotify-card rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 overflow-hidden">
-        <img v-if="firstCover" :src="firstCover" class="w-full h-full object-cover" />
+      <div class="w-32 h-32 md:w-48 md:h-48 bg-spotify-card rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 overflow-hidden relative group cursor-pointer"
+        @click="$refs.coverInput.click()">
+        <img v-if="playlistCover" :src="playlistCover" class="w-full h-full object-cover" />
         <svg v-else class="w-16 h-16 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <!-- Upload overlay -->
+        <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-3.2-5c0 1.77 1.43 3.2 3.2 3.2s3.2-1.43 3.2-3.2-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2z"/></svg>
+          <span class="text-white text-xs mt-1">Change</span>
+        </div>
+        <input ref="coverInput" type="file" accept="image/*" class="hidden" @change="uploadCover" />
       </div>
       <div>
         <p class="text-xs text-spotify-light uppercase tracking-wider">Playlist</p>
@@ -88,10 +95,35 @@ const isDownloadingAll = ref(false)
 const showAddSongs = ref(false)
 const dlProgress = ref(0)
 
-const firstCover = computed(() => {
+const playlistCover = computed(() => {
+  // Custom cover first, then auto from first song
+  if (playlist.value?.cover) return playlist.value.cover
   const item = items.value.find(i => i.thumbnail)
   return item?.thumbnail || null
 })
+
+async function uploadCover(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  // Convert to base64 data URL
+  const reader = new FileReader()
+  reader.onload = async () => {
+    const dataUrl = reader.result
+    try {
+      await api('/bars/api/playlists.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_cover',
+          playlist_id: playlist.value.id,
+          cover: dataUrl
+        })
+      })
+      playlist.value.cover = dataUrl
+    } catch {}
+  }
+  reader.readAsDataURL(file)
+}
 const downloadedCount = computed(() => items.value.filter(i => i.is_downloaded).length)
 const undownloadedCount = computed(() => items.value.filter(i => !i.is_downloaded).length)
 const downloadedItems = computed(() => items.value.filter(i => i.is_downloaded && i.song_id))

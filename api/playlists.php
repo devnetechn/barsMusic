@@ -89,9 +89,29 @@ if ($method === 'POST') {
             echo json_encode(['error' => 'Name required']);
             exit;
         }
-        $stmt = $db->prepare('INSERT INTO playlists (user_id, name) VALUES (?, ?)');
-        $stmt->execute([$userId, $name]);
+        $cover = $input['cover'] ?? null;
+        $stmt = $db->prepare('INSERT INTO playlists (user_id, name, cover) VALUES (?, ?, ?)');
+        $stmt->execute([$userId, $name, $cover]);
         echo json_encode(['success' => true, 'id' => $db->lastInsertId()]);
+        exit;
+    }
+
+    // Update playlist cover
+    if ($action === 'update_cover') {
+        $playlistId = $input['playlist_id'] ?? 0;
+        $cover = $input['cover'] ?? null;
+
+        $stmt = $db->prepare('SELECT id FROM playlists WHERE id = ? AND user_id = ?');
+        $stmt->execute([$playlistId, $userId]);
+        if (!$stmt->fetch()) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Not your playlist']);
+            exit;
+        }
+
+        $stmt = $db->prepare('UPDATE playlists SET cover = ? WHERE id = ?');
+        $stmt->execute([$cover, $playlistId]);
+        echo json_encode(['success' => true]);
         exit;
     }
 
