@@ -65,7 +65,7 @@
     <div class="space-y-2">
       <router-link v-for="playlist in playlists" :key="playlist.id"
         :to="`/playlist/${playlist.id}`"
-        class="flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors">
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors block">
         <div class="w-14 h-14 rounded flex-shrink-0 flex items-center justify-center shadow overflow-hidden"
           :class="playlist.cover ? '' : 'bg-gradient-to-br from-purple-700 to-blue-900'">
           <img v-if="playlist.cover" :src="playlist.cover" class="w-full h-full object-cover" />
@@ -105,7 +105,7 @@
     </div>
 
     <!-- Context Menu (Bottom Sheet) -->
-    <div v-if="contextSong" class="fixed inset-0 bg-black/60 z-[90] flex items-end justify-center"
+    <div v-if="contextSong && !showAddToPlaylist" class="fixed inset-0 bg-black/60 z-[90] flex items-end justify-center"
       @click.self="contextSong = null">
       <div class="bg-spotify-card rounded-t-2xl w-full max-w-lg p-4 animate-slide-up"
         style="padding-bottom: calc(env(safe-area-inset-bottom) + 8rem)">
@@ -135,7 +135,7 @@
           <svg class="w-5 h-5 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
           <span class="text-sm text-white">Add to Queue</span>
         </button>
-        <button @click="showAddToPlaylist = true"
+        <button @click="handleAddToPlaylist"
           class="flex items-center gap-3 w-full p-3 rounded-md hover:bg-spotify-lighter/20 transition-colors">
           <svg class="w-5 h-5 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/></svg>
           <span class="text-sm text-white">Add to Playlist</span>
@@ -150,7 +150,7 @@
 
     <!-- Add to Playlist Modal -->
     <AddToPlaylist :show="showAddToPlaylist" :song="contextSong"
-      @close="showAddToPlaylist = false; contextSong = null" />
+      @close="showAddToPlaylist = false" />
   </div>
 </template>
 
@@ -201,6 +201,11 @@ function handleAddToQueue() {
     player.addToQueue(contextSong.value)
     contextSong.value = null
   }
+}
+
+function handleAddToPlaylist() {
+  // Keep contextSong for the AddToPlaylist modal, but close the context menu overlay
+  showAddToPlaylist.value = true
 }
 
 async function handleDeleteFromContext() {
