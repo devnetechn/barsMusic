@@ -99,8 +99,8 @@
   </div>
 
   <!-- Main App -->
-  <div v-else class="fixed inset-0 flex flex-col bg-spotify-black">
-    <!-- NavBar removed on mobile to prevent overlap -->
+  <div v-else class="fixed inset-0 flex flex-col bg-spotify-black"
+    style="padding-top: env(safe-area-inset-top)">
     <div class="flex flex-1 min-h-0">
       <Sidebar class="hidden md:flex flex-shrink-0" />
       <main class="flex-1 overflow-y-auto" :style="mainPadding">
