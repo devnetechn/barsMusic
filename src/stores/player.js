@@ -284,7 +284,7 @@ export const usePlayerStore = defineStore('player', {
         if (hasMore) {
           this.next()
         } else {
-          this._autoPlayRelated()
+          this._autoPlayNext()
         }
       }
     },
@@ -330,6 +330,37 @@ export const usePlayerStore = defineStore('player', {
       }
       this.shuffleOrder = indices
       this.shuffleIndex = -1
+    },
+
+    async _autoPlayNext() {
+      if (!this.currentSong) return
+
+      // Try online autoplay first, fall back to local songs
+      try {
+        await this._autoPlayRelated()
+      } catch {
+        await this._autoPlayLocal()
+      }
+    },
+
+    async _autoPlayLocal() {
+      // Play a random local song from IndexedDB
+      try {
+        const { getAllSongs } = await import('../utils/db')
+        const songs = await getAllSongs()
+        if (songs.length === 0) return
+
+        // Filter out current song
+        const others = songs.filter(s => s.id !== this.currentSong?.id)
+        if (others.length === 0) return
+
+        // Pick random
+        const pick = others[Math.floor(Math.random() * others.length)]
+        pick.album = pick.album || 'Shuffle'
+        await this.playSong(pick, others, others.indexOf(pick))
+      } catch (err) {
+        console.error('Local autoplay failed:', err)
+      }
     },
 
     async _autoPlayRelated() {
@@ -433,10 +464,12 @@ export const usePlayerStore = defineStore('player', {
           }
         }
 
-        // All candidates failed
+        // All candidates failed — throw so _autoPlayNext tries local
         this.isPlaying = false
+        throw new Error('No online candidates')
       } catch (err) {
         console.error('Auto-play related failed:', err)
+        throw err
       }
     },
 
