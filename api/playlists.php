@@ -66,13 +66,22 @@ if ($method === 'GET') {
     $stmt = $db->prepare('
         SELECT p.*,
             (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id) as total,
-            (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id AND is_downloaded = 1) as downloaded
+            (SELECT COUNT(*) FROM playlist_songs WHERE playlist_id = p.id AND is_downloaded = 1) as downloaded,
+            (SELECT COALESCE(ps2.cover, CASE WHEN ps2.video_id IS NOT NULL THEN CONCAT("https://i.ytimg.com/vi/", ps2.video_id, "/hqdefault.jpg") ELSE NULL END) FROM playlist_songs ps2 WHERE ps2.playlist_id = p.id AND (ps2.cover IS NOT NULL OR ps2.video_id IS NOT NULL) ORDER BY ps2.position ASC LIMIT 1) as first_song_cover
         FROM playlists p
         WHERE p.user_id = ?
         ORDER BY p.created_at DESC
     ');
     $stmt->execute([$userId]);
-    echo json_encode(['playlists' => $stmt->fetchAll()]);
+    $playlists = $stmt->fetchAll();
+    // Use first_song_cover as fallback if no custom cover
+    foreach ($playlists as &$pl) {
+        if (empty($pl['cover']) && !empty($pl['first_song_cover'])) {
+            $pl['cover'] = $pl['first_song_cover'];
+        }
+        unset($pl['first_song_cover']);
+    }
+    echo json_encode(['playlists' => $playlists]);
     exit;
 }
 
