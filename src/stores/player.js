@@ -64,6 +64,7 @@ export const usePlayerStore = defineStore('player', {
       }
 
       this.currentSong = song
+      this.isPlaying = true // Show playing state immediately
 
       // Record play history (fire and forget)
       import('../utils/api').then(({ api: apiFn }) => {
@@ -79,24 +80,27 @@ export const usePlayerStore = defineStore('player', {
         }).catch(() => {})
       }).catch(() => {})
 
-      let blob = await getAudioBlob(song.id)
-      let url
-
-      if (blob) {
-        url = URL.createObjectURL(blob)
-      } else if (song.url) {
-        url = song.url
-      } else if (song.filename) {
-        // Fallback: try to play from server music folder
-        url = `/bars/music/${song.filename}`
-      } else {
-        return
+      // Use preloaded URL if available, otherwise resolve
+      let url = song._preloadedUrl || null
+      if (!url) {
+        const blob = await getAudioBlob(song.id)
+        if (blob) {
+          url = URL.createObjectURL(blob)
+        } else if (song.url) {
+          url = song.url
+        } else if (song.filename) {
+          url = `/bars/music/${song.filename}`
+        } else {
+          this.isPlaying = false
+          return
+        }
       }
 
       this.howl = new Howl({
         src: [url],
         format: [getFormat(song.filename || song.title)],
         html5: true,
+        preload: true,
         volume: this.isMuted ? 0 : this.volume,
         onplay: () => {
           this.isPlaying = true
@@ -117,10 +121,14 @@ export const usePlayerStore = defineStore('player', {
         },
         onloaderror: (id, err) => {
           console.error('Load error:', err)
+          this.isPlaying = false
         }
       })
 
       this.howl.play()
+
+      // Preload next song in background
+      this._preloadNext()
 
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -443,6 +451,29 @@ export const usePlayerStore = defineStore('player', {
         clearInterval(this._progressInterval)
         this._progressInterval = null
       }
+    },
+
+    async _preloadNext() {
+      // Preload the next song's audio URL so it plays instantly
+      let nextSong = null
+      if (this.userQueue.length > 0) {
+        nextSong = this.userQueue[0]
+      } else if (this.queueIndex < this.queue.length - 1) {
+        nextSong = this.queue[this.queueIndex + 1]
+      }
+      if (!nextSong || nextSong._preloadedUrl) return
+
+      try {
+        const blob = await getAudioBlob(nextSong.id)
+        if (blob) {
+          nextSong._preloadedUrl = URL.createObjectURL(blob)
+        } else if (nextSong.url || nextSong.filename) {
+          // Pre-fetch the audio to browser cache
+          const url = nextSong.url || `/bars/music/${nextSong.filename}`
+          fetch(url, { mode: 'no-cors' }).catch(() => {})
+          nextSong._preloadedUrl = url
+        }
+      } catch {}
     }
   }
 })
