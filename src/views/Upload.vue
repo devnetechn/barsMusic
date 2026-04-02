@@ -7,28 +7,27 @@
     <div v-if="auth.isAdmin" class="bg-spotify-card rounded-lg p-4 mb-6">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-3">
-          <svg class="w-5 h-5 text-spotify-green" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          <svg class="w-5 h-5 text-spotify-green" :class="{ 'animate-spin': syncStore.syncing }" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
           <h3 class="text-white font-semibold">Sync from Server</h3>
         </div>
-        <button @click="syncFromServer" :disabled="syncing"
+        <button @click="syncFromServer" :disabled="syncStore.syncing"
           class="px-4 py-2 bg-spotify-green text-black font-semibold text-sm rounded-full hover:bg-spotify-green-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ syncing ? 'Syncing...' : 'Sync Now' }}
+          {{ syncStore.syncing ? 'Syncing...' : 'Sync Now' }}
         </button>
       </div>
       <p class="text-sm text-spotify-light">
-        Download songs uploaded from other devices on the same WiFi network
+        Runs in background — you can navigate away
       </p>
-      <!-- Sync progress -->
-      <div v-if="syncStatus" class="mt-3 text-sm"
-        :class="syncStatus.type === 'error' ? 'text-red-400' : syncStatus.type === 'success' ? 'text-spotify-green' : 'text-spotify-light'">
-        {{ syncStatus.message }}
+      <div v-if="syncStore.status" class="mt-3 text-sm"
+        :class="syncStore.status.type === 'error' ? 'text-red-400' : syncStore.status.type === 'success' ? 'text-spotify-green' : 'text-spotify-light'">
+        {{ syncStore.status.message }}
       </div>
-      <div v-if="syncProgress.total > 0" class="mt-2">
+      <div v-if="syncStore.progress.total > 0" class="mt-2">
         <div class="h-1.5 bg-spotify-lighter/30 rounded-full overflow-hidden">
           <div class="h-full bg-spotify-green rounded-full transition-all duration-300"
-            :style="{ width: (syncProgress.current / syncProgress.total * 100) + '%' }"></div>
+            :style="{ width: (syncStore.progress.current / syncStore.progress.total * 100) + '%' }"></div>
         </div>
-        <p class="text-xs text-spotify-light mt-1">{{ syncProgress.current }} / {{ syncProgress.total }} songs</p>
+        <p class="text-xs text-spotify-light mt-1">{{ syncStore.progress.current }} / {{ syncStore.progress.total }} songs</p>
       </div>
     </div>
 
@@ -103,17 +102,16 @@ import { ref, onMounted } from 'vue'
 import { saveSong, getAllSongs, songExists, getStorageEstimate } from '../utils/db'
 import { api, fetchMusic } from '../utils/api'
 import { useAuthStore } from '../stores/auth'
+import { useSyncStore } from '../stores/sync'
 
 const auth = useAuthStore()
+const syncStore = useSyncStore()
 
 const fileInput = ref(null)
 const isDragging = ref(false)
 const uploads = ref([])
 const copied = ref(false)
 const storageInfo = ref(null)
-const syncing = ref(false)
-const syncStatus = ref(null)
-const syncProgress = ref({ current: 0, total: 0 })
 
 const networkUrl = ref(window.location.origin + window.location.pathname)
 
@@ -183,83 +181,8 @@ async function processFiles(files) {
   storageInfo.value = await getStorageEstimate()
 }
 
-async function syncFromServer() {
-  syncing.value = true
-  syncStatus.value = { type: 'info', message: 'Checking server for songs...' }
-  syncProgress.value = { current: 0, total: 0 }
-
-  try {
-    // Get ALL songs from server (admin sync)
-    const res = await api('/bars/api/songs.php?sync')
-    const data = await res.json()
-    const serverSongs = data.songs || []
-
-    if (serverSongs.length === 0) {
-      syncStatus.value = { type: 'info', message: 'No songs found on server' }
-      syncing.value = false
-      return
-    }
-
-    // Get existing songs from IndexedDB
-    const localSongs = await getAllSongs()
-    const localFilenames = new Set(localSongs.map(s => s.filename))
-
-    // Find songs not yet downloaded
-    const newSongs = serverSongs.filter(s => !localFilenames.has(s.filename))
-
-    if (newSongs.length === 0) {
-      syncStatus.value = { type: 'success', message: 'All songs already synced!' }
-      syncing.value = false
-      return
-    }
-
-    syncStatus.value = { type: 'info', message: `Downloading ${newSongs.length} new song(s)...` }
-    syncProgress.value = { current: 0, total: newSongs.length }
-
-    let downloaded = 0
-    let failed = 0
-
-    for (const song of newSongs) {
-      try {
-        // Download the audio file from server - use relative URL
-        const audioRes = await fetchMusic(song.url)
-
-        const audioBlob = await audioRes.blob()
-
-        // Save to IndexedDB
-        const metadata = {
-          title: song.title,
-          artist: song.artist || 'Unknown Artist',
-          album: song.album || 'Unknown Album',
-          filename: song.filename,
-          cover: song.cover || null,
-          size: song.size || audioBlob.size,
-          type: audioBlob.type || 'audio/mpeg'
-        }
-
-        await saveSong(metadata, audioBlob)
-        downloaded++
-      } catch (err) {
-        console.error(`Failed to sync ${song.filename}:`, err)
-        failed++
-      }
-
-      syncProgress.value.current = downloaded + failed
-    }
-
-    if (failed === 0) {
-      syncStatus.value = { type: 'success', message: `Successfully downloaded ${downloaded} song(s)!` }
-    } else {
-      syncStatus.value = { type: 'error', message: `Downloaded ${downloaded}, failed ${failed} song(s)` }
-    }
-
-    storageInfo.value = await getStorageEstimate()
-  } catch (err) {
-    console.error('Sync failed:', err)
-    syncStatus.value = { type: 'error', message: 'Failed to connect to server. Make sure you are on the same WiFi.' }
-  }
-
-  syncing.value = false
+function syncFromServer() {
+  syncStore.syncFromServer()
 }
 
 async function copyUrl() {
