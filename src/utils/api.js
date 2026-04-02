@@ -60,7 +60,6 @@ async function _processDownloadQueue() {
   }
 
   _isDownloading = false
-  }
 }
 
 // Fetch a music file - tries proxy path first, falls back to direct path

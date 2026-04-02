@@ -1,32 +1,32 @@
-const CACHE_NAME = 'muzik-v1775113462317'
+const CACHE_NAME = 'muzik-v1775113509493'
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
-  "./assets/AddToPlaylist-nLUmRhwf.js",
-  "./assets/api-BTuMjAYx.js",
+  "./assets/AddToPlaylist-BLbFFLbF.js",
+  "./assets/api-BPGeZ2SM.js",
   "./assets/auth-DcFo41KE.js",
   "./assets/db-Ds1lkQJc.js",
-  "./assets/Home-CfAjLmEW.js",
+  "./assets/Home-CXQSJ1jW.js",
   "./assets/Home-Lvk1_uac.css",
   "./assets/howler-CdqKDEqT.js",
-  "./assets/index-DKEULwjg.js",
+  "./assets/index-aO8WPuFN.js",
   "./assets/index-DLYt8WQM.css",
   "./assets/Layout-BGNvgM3r.css",
-  "./assets/Layout-CGHE3H2t.js",
-  "./assets/Library-CAbgRzJ4.js",
-  "./assets/LikeButton-ARsjghOy.js",
-  "./assets/LikedSongs-bEsixqIt.js",
-  "./assets/likes-SJCxC8DQ.js",
+  "./assets/Layout-DK0gw99U.js",
+  "./assets/Library-DCknX7zX.js",
+  "./assets/LikeButton-EDqxAjtf.js",
+  "./assets/LikedSongs-Bgx5-aY1.js",
+  "./assets/likes-C715v4kC.js",
   "./assets/pinia-Cm2UAAgM.js",
-  "./assets/player-oEVYZWFH.js",
-  "./assets/PlaylistView-BropdYvH.js",
-  "./assets/QueuePanel-B8mO5brm.js",
+  "./assets/player-DEQS1ZSF.js",
+  "./assets/PlaylistView-czLdWJde.js",
   "./assets/QueuePanel-BMRmnZOL.css",
-  "./assets/Search-DsbHIgOm.js",
-  "./assets/Upload-BB6a7-hC.js"
+  "./assets/QueuePanel-D0QCVmEx.js",
+  "./assets/Search-Cxe08VTQ.js",
+  "./assets/Upload-Cr8FvxjM.js"
 ]
 
 // Install - pre-cache ALL app files so it works offline immediately
