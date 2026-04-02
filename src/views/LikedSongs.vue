@@ -67,21 +67,25 @@ function buildSongObj(song) {
     title: song.title,
     artist: song.artist,
     cover: song.cover,
-    video_id: song.video_id
+    video_id: song.video_id,
+    filename: song.filename || null,
+    url: song.filename ? `/bars/music/${song.filename}` : null
   }
 }
 
 async function playSong(song, index) {
   const songObj = buildSongObj(song)
 
-  // If it's a YouTube song, get stream URL
-  if (song.video_id && !song.filename) {
+  // If no filename (not downloaded), try to get stream URL
+  if (!songObj.url && song.video_id) {
     try {
       const res = await api(`/bars/api/yt-stream.php?id=${song.video_id}`)
       const data = await res.json()
       if (data.success) songObj.url = data.url
     } catch {}
   }
+
+  if (!songObj.url) return // Can't play without URL
 
   const allSongs = likes.likedSongs.map(s => buildSongObj(s))
   player.playSong(songObj, allSongs, index)

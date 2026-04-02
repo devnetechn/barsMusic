@@ -55,14 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $db->prepare('INSERT IGNORE INTO liked_songs (user_id, song_id, video_id, title, artist, cover) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT IGNORE INTO liked_songs (user_id, song_id, video_id, title, artist, cover, filename) VALUES (?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $userId,
         $songId,
         $input['video_id'] ?? null,
         $input['title'] ?? '',
         $input['artist'] ?? '',
-        $input['cover'] ?? null
+        $input['cover'] ?? null,
+        $input['filename'] ?? null
     ]);
     echo json_encode(['success' => true, 'liked' => true]);
     exit;

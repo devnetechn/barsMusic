@@ -41,6 +41,7 @@ export const useLikesStore = defineStore('likes', {
           title: song.title || '',
           artist: song.artist || song.author || '',
           cover: song.cover || song.thumbnail || null,
+          filename: song.filename || null,
           created_at: new Date().toISOString()
         })
       }
@@ -61,7 +62,8 @@ export const useLikesStore = defineStore('likes', {
               video_id: song.video_id || song.videoId || null,
               title: song.title || '',
               artist: song.artist || song.author || '',
-              cover: song.cover || song.thumbnail || null
+              cover: song.cover || song.thumbnail || null,
+              filename: song.filename || null
             })
           })
         }
