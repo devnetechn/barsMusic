@@ -55,7 +55,18 @@ export const usePlayerStore = defineStore('player', {
 
   actions: {
     async playSong(song, queue = null, index = -1) {
-      this.stop()
+      const isCrossfade = this._crossfadeNext
+      this._crossfadeNext = false
+
+      if (isCrossfade) {
+        // Don't stop — let old song fade out
+        const oldHowl = this.howl
+        this.howl = null
+        this._stopProgress()
+        setTimeout(() => { if (oldHowl) oldHowl.unload() }, 3500)
+      } else {
+        this.stop()
+      }
 
       if (queue) {
         this.queue = [...queue]
@@ -137,7 +148,15 @@ export const usePlayerStore = defineStore('player', {
       }
 
       this.howl = new Howl(howlOpts)
-      this.howl.play()
+
+      // Crossfade: start at volume 0 and fade in
+      if (isCrossfade) {
+        this.howl.volume(0)
+        this.howl.play()
+        this.howl.fade(0, this.isMuted ? 0 : this.volume, 2500)
+      } else {
+        this.howl.play()
+      }
 
       // Preload next song + autoplay in background
       this._preloadNext()
@@ -500,11 +519,71 @@ export const usePlayerStore = defineStore('player', {
 
     _startProgress() {
       this._stopProgress()
+      this._crossfading = false
       this._progressInterval = setInterval(() => {
         if (this.howl && this.isPlaying) {
           this.currentTime = this.howl.seek() || 0
+
+          // Crossfade: start fading 4 seconds before end
+          if (!this._crossfading && this.duration > 10 && this.currentTime > 0) {
+            const remaining = this.duration - this.currentTime
+            if (remaining <= 4 && remaining > 0) {
+              this._crossfading = true
+              this._startCrossfade()
+            }
+          }
         }
       }, 250)
+    },
+
+    _startCrossfade() {
+      if (!this.howl) return
+      const vol = this.isMuted ? 0 : this.volume
+
+      // Fade out current song
+      this.howl.fade(vol, 0, 3500)
+
+      // Check what to play next
+      const hasUserQueue = this.userQueue.length > 0
+      const hasShuffleNext = this.shuffle && (this.shuffleIndex + 1 < this.shuffleOrder.length || this.repeat === 'all')
+      const hasLinearNext = !this.shuffle && (this.queueIndex < this.queue.length - 1 || this.repeat === 'all')
+      const hasMore = hasUserQueue || hasShuffleNext || hasLinearNext
+
+      if (hasMore || this._nextAutoplay) {
+        // Start next song with fade in after 1 second overlap
+        setTimeout(() => {
+          if (hasMore) {
+            this._crossfadeNext = true
+            this.next()
+          } else if (this._nextAutoplay) {
+            const { song, howl } = this._nextAutoplay
+            this._nextAutoplay = null
+
+            this.currentSong = song
+            this.queue = []
+            this.queueIndex = -1
+
+            // Don't unload old howl yet — let it fade out
+            const oldHowl = this.howl
+            this.howl = howl
+            this.howl.volume(0)
+            this.howl.play()
+            this.howl.fade(0, vol, 2500)
+
+            // Clean up old after fade
+            setTimeout(() => { if (oldHowl) oldHowl.unload() }, 3500)
+
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.title || 'Unknown', artist: song.artist || 'Unknown',
+                album: song.album || 'Auto-Play',
+                artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+              })
+            }
+            this._preloadAutoplay()
+          }
+        }, 1000)
+      }
     },
 
     _stopProgress() {

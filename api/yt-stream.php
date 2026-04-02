@@ -41,8 +41,15 @@ if (empty($streamUrl)) {
     exit;
 }
 
+// Detect format from the URL or format used
+$format = 'mp4';
+if (strpos($fmt ?? '', 'webm') !== false || strpos($streamUrl, 'mime=audio%2Fwebm') !== false) {
+    $format = 'webm';
+}
+
 echo json_encode([
     'success' => true,
     'url' => $streamUrl,
+    'format' => $format,
     'videoId' => $videoId
 ]);
