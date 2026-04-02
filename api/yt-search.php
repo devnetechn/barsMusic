@@ -17,7 +17,21 @@ if (empty($results)) {
     $results = ytdlpSearch($query);
 }
 
-echo json_encode(['results' => $results]);
+// Rank results by relevance to query
+$queryWords = array_filter(explode(' ', strtolower($query)));
+usort($results, function($a, $b) use ($queryWords) {
+    $scoreA = 0;
+    $scoreB = 0;
+    $titleA = strtolower($a['title']);
+    $titleB = strtolower($b['title']);
+    foreach ($queryWords as $word) {
+        if (stripos($titleA, $word) !== false) $scoreA++;
+        if (stripos($titleB, $word) !== false) $scoreB++;
+    }
+    return $scoreB - $scoreA;
+});
+
+echo json_encode(['results' => array_slice($results, 0, 10)]);
 
 function innertubeSearch($query) {
     $postData = json_encode([
@@ -80,7 +94,7 @@ function innertubeSearch($query) {
                 'thumbnail' => 'https://i.ytimg.com/vi/' . $videoId . '/hqdefault.jpg',
                 'viewCount' => $viewText
             ];
-            if (count($results) >= 15) break 2;
+            if (count($results) >= 10) break 2;
         }
     }
     return $results;
@@ -90,7 +104,7 @@ function ytdlpSearch($query) {
     $python = getPythonCmd();
     $devnull = getDevNull();
     $safeQuery = preg_replace('/[^a-zA-Z0-9 \-]/', '', $query);
-    $searchArg = escapeshellarg('ytsearch15:' . $safeQuery);
+    $searchArg = escapeshellarg('ytsearch10:' . $safeQuery);
     $cmd = sprintf(
         '%s -m yt_dlp %s --flat-playlist --dump-json --no-warnings 2>%s',
         escapeshellarg($python),
