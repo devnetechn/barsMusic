@@ -1,24 +1,29 @@
 <template>
   <div class="p-4 md:p-6">
-    <div class="flex items-center justify-between mb-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
       <h1 class="text-2xl font-bold text-white">Your Library</h1>
       <button @click="showCreatePlaylist = true"
-        class="px-4 py-2 bg-spotify-card text-white text-sm rounded-full hover:bg-spotify-lighter/30 transition-colors">
-        New Playlist
+        class="w-8 h-8 bg-spotify-card rounded-full flex items-center justify-center hover:bg-spotify-lighter/30 transition-colors">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex gap-2 mb-6 overflow-x-auto scrollbar-none">
-      <button v-for="t in tabs" :key="t.key" @click="tab = t.key"
-        class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
-        :class="tab === t.key ? 'bg-white text-black' : 'bg-spotify-card text-white hover:bg-spotify-lighter/30'">
-        {{ t.label }}
-      </button>
+    <!-- Downloads card -->
+    <div @click="showDownloads = !showDownloads"
+      class="flex items-center gap-3 p-3 rounded-lg bg-spotify-card hover:bg-spotify-lighter/30 transition-colors cursor-pointer mb-2">
+      <div class="w-14 h-14 bg-gradient-to-br from-spotify-green to-green-700 rounded flex-shrink-0 flex items-center justify-center shadow">
+        <svg class="w-7 h-7 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M16 13h-3V3h-2v10H8l4 4 4-4zM4 19v2h16v-2H4z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-base font-bold text-white">Downloads</p>
+        <p class="text-xs text-spotify-light">{{ songs.length }} songs</p>
+      </div>
+      <svg class="w-5 h-5 text-spotify-light transition-transform" :class="{ 'rotate-180': showDownloads }" fill="currentColor" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
     </div>
 
-    <!-- Songs list -->
-    <div v-if="tab === 'songs'" class="space-y-1">
+    <!-- Downloads expanded -->
+    <div v-if="showDownloads" class="mb-4 space-y-1 pl-2">
       <div v-for="(song, index) in songs" :key="song.id"
         class="flex items-center gap-3 p-2 rounded-md hover:bg-spotify-card transition-colors cursor-pointer group"
         @click="playSong(song, index)">
@@ -38,83 +43,30 @@
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
         </button>
       </div>
-      <div v-if="!songs.length" class="text-center py-12">
-        <p class="text-spotify-light">No songs yet</p>
-        <router-link to="/upload" class="text-spotify-green text-sm hover:underline">Upload some music</router-link>
+      <div v-if="!songs.length" class="text-center py-6">
+        <p class="text-spotify-light text-sm">No downloaded songs</p>
       </div>
     </div>
 
-    <!-- Artists list -->
-    <div v-if="tab === 'artists'" class="space-y-1">
-      <div v-for="artist in artists" :key="artist.name"
-        class="flex items-center gap-3 p-2 rounded-md hover:bg-spotify-card transition-colors cursor-pointer"
-        @click="playArtist(artist)">
-        <div class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
-          :class="artist.cover ? '' : 'bg-spotify-lighter'">
-          <img v-if="artist.cover" :src="artist.cover" class="w-full h-full object-cover" />
-          <span v-else class="text-lg font-bold text-spotify-light">{{ artist.name.charAt(0).toUpperCase() }}</span>
+    <!-- Playlists -->
+    <div class="space-y-2">
+      <router-link v-for="playlist in playlists" :key="playlist.id"
+        :to="`/playlist/${playlist.id}`"
+        class="flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors">
+        <div class="w-14 h-14 bg-gradient-to-br from-purple-700 to-blue-900 rounded flex-shrink-0 flex items-center justify-center shadow">
+          <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-white truncate">{{ artist.name }}</p>
-          <p class="text-xs text-spotify-light">{{ artist.songs.length }} {{ artist.songs.length === 1 ? 'song' : 'songs' }}</p>
+          <p class="text-base font-medium text-white truncate">{{ playlist.name }}</p>
+          <p class="text-xs text-spotify-light">Playlist · {{ playlist.total || 0 }} songs</p>
         </div>
-      </div>
-      <div v-if="!artists.length" class="text-center py-12">
-        <p class="text-spotify-light">No artists yet</p>
-      </div>
+      </router-link>
     </div>
 
-    <!-- Albums grid -->
-    <div v-if="tab === 'albums'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <div v-for="album in albums" :key="album.name + album.artist"
-        class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-lg p-4 transition-colors group cursor-pointer"
-        @click="playAlbum(album)">
-        <div class="aspect-square bg-spotify-lighter rounded-md flex items-center justify-center mb-3 overflow-hidden">
-          <img v-if="album.cover" :src="album.cover" class="w-full h-full object-cover" />
-          <svg v-else class="w-12 h-12 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
-        </div>
-        <p class="text-sm font-semibold text-white truncate">{{ album.name }}</p>
-        <p class="text-xs text-spotify-light mt-1 truncate">{{ album.artist || 'Unknown Artist' }} · {{ album.songs.length }} {{ album.songs.length === 1 ? 'song' : 'songs' }}</p>
-      </div>
-      <div v-if="!albums.length" class="col-span-full text-center py-12">
-        <p class="text-spotify-light">No albums yet</p>
-      </div>
-    </div>
-
-    <!-- Playlists (Spotify-style list on mobile, grid on desktop) -->
-    <div v-if="tab === 'playlists'">
-      <!-- Mobile: list -->
-      <div class="md:hidden space-y-1">
-        <router-link v-for="playlist in playlists" :key="playlist.id"
-          :to="`/playlist/${playlist.id}`"
-          class="flex items-center gap-3 p-2 rounded-md hover:bg-spotify-card transition-colors">
-          <div class="w-12 h-12 bg-gradient-to-br from-purple-700 to-blue-900 rounded flex-shrink-0 flex items-center justify-center shadow">
-            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">{{ playlist.name }}</p>
-            <p class="text-xs text-spotify-light">Playlist · {{ playlist.total || 0 }} songs</p>
-          </div>
-        </router-link>
-        <div v-if="!playlists.length" class="text-center py-12">
-          <p class="text-spotify-light">No playlists yet</p>
-        </div>
-      </div>
-      <!-- Desktop: grid -->
-      <div class="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <router-link v-for="playlist in playlists" :key="playlist.id"
-          :to="`/playlist/${playlist.id}`"
-          class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-lg p-4 transition-colors group">
-          <div class="aspect-square bg-gradient-to-br from-purple-700 to-blue-900 rounded-md flex items-center justify-center mb-3 shadow-lg">
-            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
-          </div>
-          <p class="text-sm font-semibold text-white truncate">{{ playlist.name }}</p>
-          <p class="text-xs text-spotify-light mt-1">Playlist · {{ playlist.total || 0 }} songs</p>
-        </router-link>
-        <div v-if="!playlists.length" class="col-span-full text-center py-12">
-          <p class="text-spotify-light">No playlists yet</p>
-        </div>
-      </div>
+    <div v-if="!playlists.length && !songs.length" class="text-center py-16">
+      <svg class="w-16 h-16 text-spotify-lighter mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <p class="text-spotify-light">Your library is empty</p>
+      <router-link to="/search" class="text-spotify-green text-sm hover:underline mt-2 inline-block">Search for music</router-link>
     </div>
 
     <!-- Create Playlist Modal -->
@@ -181,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { getAllSongs, deleteSong } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
 import { api } from '../utils/api'
@@ -190,41 +142,12 @@ import AddToPlaylist from '../components/AddToPlaylist.vue'
 const player = usePlayerStore()
 const songs = ref([])
 const playlists = ref([])
-const tab = ref('songs')
+const showDownloads = ref(false)
 const showCreatePlaylist = ref(false)
 const newPlaylistName = ref('')
 const playlistInput = ref(null)
 const contextSong = ref(null)
 const showAddToPlaylist = ref(false)
-
-const artists = computed(() => {
-  const map = {}
-  for (const song of songs.value) {
-    const name = song.artist || 'Unknown Artist'
-    if (!map[name]) map[name] = { name, songs: [], cover: song.cover }
-    map[name].songs.push(song)
-    if (!map[name].cover && song.cover) map[name].cover = song.cover
-  }
-  return Object.values(map).sort((a, b) => b.songs.length - a.songs.length)
-})
-
-const albums = computed(() => {
-  const map = {}
-  for (const song of songs.value) {
-    const name = song.album || 'Unknown Album'
-    if (!map[name]) map[name] = { name, artist: song.artist, songs: [], cover: song.cover }
-    map[name].songs.push(song)
-    if (!map[name].cover && song.cover) map[name].cover = song.cover
-  }
-  return Object.values(map).sort((a, b) => b.songs.length - a.songs.length)
-})
-
-const tabs = computed(() => [
-  { key: 'songs', label: `Songs (${songs.value.length})` },
-  { key: 'artists', label: `Artists (${artists.value.length})` },
-  { key: 'albums', label: `Albums (${albums.value.length})` },
-  { key: 'playlists', label: `Playlists (${playlists.value.length})` },
-])
 
 watch(showCreatePlaylist, async (val) => {
   if (val) {
@@ -235,14 +158,6 @@ watch(showCreatePlaylist, async (val) => {
 
 function playSong(song, index) {
   player.playSong(song, songs.value, index)
-}
-
-function playArtist(artist) {
-  player.playSong(artist.songs[0], artist.songs, 0)
-}
-
-function playAlbum(album) {
-  player.playSong(album.songs[0], album.songs, 0)
 }
 
 function openContextMenu(song) {
@@ -302,10 +217,8 @@ async function loadPlaylists() {
 }
 
 onMounted(async () => {
-  // Load local songs from IndexedDB
   const localSongs = await getAllSongs()
 
-  // Also load from server and merge
   try {
     const res = await api('/bars/api/songs.php')
     const data = await res.json()
