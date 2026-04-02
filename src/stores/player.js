@@ -20,7 +20,8 @@ export const usePlayerStore = defineStore('player', {
     userQueue: [],
     shuffleOrder: [],
     shuffleIndex: -1,
-    showQueue: false
+    showQueue: false,
+    _nextAutoplay: null // Preloaded next autoplay song { song, howl }
   }),
 
   getters: {
@@ -138,8 +139,9 @@ export const usePlayerStore = defineStore('player', {
       this.howl = new Howl(howlOpts)
       this.howl.play()
 
-      // Preload next song in background
+      // Preload next song + autoplay in background
       this._preloadNext()
+      this._preloadAutoplay()
 
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -293,7 +295,32 @@ export const usePlayerStore = defineStore('player', {
 
         if (hasMore) {
           this.next()
+        } else if (this._nextAutoplay) {
+          // Play preloaded autoplay song INSTANTLY (works on iOS)
+          const { song, howl } = this._nextAutoplay
+          this._nextAutoplay = null
+          this._stopProgress()
+          if (this.howl) this.howl.unload()
+
+          this.currentSong = song
+          this.queue = []
+          this.queueIndex = -1
+          this.howl = howl
+          this.howl.play()
+
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: song.title || 'Unknown',
+              artist: song.artist || 'Unknown',
+              album: song.album || 'Auto-Play',
+              artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+            })
+          }
+
+          // Preload next one
+          this._preloadAutoplay()
         } else {
+          // No preloaded song ready, try async (may not work on iOS)
           this._autoPlayNext()
         }
       }
@@ -506,6 +533,96 @@ export const usePlayerStore = defineStore('player', {
           const url = nextSong.url || `/bars/music/${nextSong.filename}`
           fetch(url, { mode: 'no-cors' }).catch(() => {})
           nextSong._preloadedUrl = url
+        }
+      } catch {}
+    },
+
+    async _preloadAutoplay() {
+      // Don't preload if there's still queue to play
+      if (this.userQueue.length > 0 || this.queueIndex < this.queue.length - 1) return
+      if (this._nextAutoplay) return
+      if (!this.currentSong) return
+
+      try {
+        const { api: apiFn } = await import('../utils/api')
+
+        // Try related songs first
+        let streamUrl = null
+        let song = null
+
+        try {
+          const params = new URLSearchParams({
+            title: this.currentSong.title || '',
+            artist: this.currentSong.artist || ''
+          })
+          const res = await apiFn(`/bars/api/related.php?${params}`)
+          const data = await res.json()
+          const results = data.results || []
+          if (results.length > 0) {
+            const pick = results[Math.floor(Math.random() * Math.min(5, results.length))]
+            const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
+            const streamData = await streamRes.json()
+            if (streamData.success) {
+              streamUrl = streamData.url
+              song = {
+                id: `yt_${pick.videoId}`,
+                title: pick.title,
+                artist: pick.author || '',
+                album: 'Auto-Play',
+                cover: pick.thumbnail,
+                url: streamUrl,
+                _videoId: pick.videoId
+              }
+            }
+          }
+        } catch {}
+
+        // Fallback: try local songs
+        if (!song) {
+          try {
+            const { getAllSongs } = await import('../utils/db')
+            const songs = await getAllSongs()
+            const others = songs.filter(s => s.id !== this.currentSong?.id)
+            if (others.length > 0) {
+              const pick = others[Math.floor(Math.random() * others.length)]
+              const blob = await getAudioBlob(pick.id)
+              if (blob) {
+                song = { ...pick, url: URL.createObjectURL(blob) }
+              } else if (pick.url || pick.filename) {
+                song = { ...pick, url: pick.url || `/bars/music/${pick.filename}` }
+              }
+            }
+          } catch {}
+        }
+
+        if (!song) return
+
+        // Create Howl ready to play (preloaded)
+        const howl = new Howl({
+          src: [song.url],
+          html5: true,
+          preload: true,
+          volume: this.isMuted ? 0 : this.volume,
+          onplay: () => {
+            this.isPlaying = true
+            this.duration = this.howl?.duration() || 0
+            this._startProgress()
+          },
+          onpause: () => { this.isPlaying = false; this._stopProgress() },
+          onstop: () => { this.isPlaying = false; this._stopProgress() },
+          onend: () => { this._stopProgress(); this.onSongEnd() },
+          onplayerror: () => {
+            if (this.howl) this.howl.once('unlock', () => this.howl.play())
+          },
+          onloaderror: () => { this.isPlaying = false }
+        })
+        if (song.filename) howl._format = [getFormat(song.filename)]
+
+        this._nextAutoplay = { song, howl }
+
+        // Auto-download YouTube songs
+        if (song._videoId) {
+          autoDownload(song._videoId, song.title, song.artist, song.cover)
         }
       } catch {}
     }
