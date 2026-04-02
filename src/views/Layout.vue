@@ -148,12 +148,14 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
+import { useLikesStore } from '../stores/likes'
 import Sidebar from '../components/Sidebar.vue'
 import BottomPlayer from '../components/BottomPlayer.vue'
 import NavBar from '../components/NavBar.vue'
 
 const playerStore = usePlayerStore()
 const auth = useAuthStore()
+const likesStore = useLikesStore()
 
 // Extra bottom padding for main content so it doesn't hide behind player + nav
 const mainPadding = computed(() => {
@@ -200,7 +202,10 @@ async function handleSignup() {
   }
 }
 
-onMounted(() => {
-  auth.checkAuth()
+onMounted(async () => {
+  await auth.checkAuth()
+  if (auth.authenticated) {
+    likesStore.loadLikedSongs()
+  }
 })
 </script>

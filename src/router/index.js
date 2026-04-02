@@ -9,7 +9,8 @@ const routes = [
       { path: 'search', name: 'search', component: () => import('../views/Search.vue') },
       { path: 'library', name: 'library', component: () => import('../views/Library.vue') },
       { path: 'upload', name: 'upload', component: () => import('../views/Upload.vue') },
-      { path: 'playlist/:id', name: 'playlist', component: () => import('../views/PlaylistView.vue') }
+      { path: 'playlist/:id', name: 'playlist', component: () => import('../views/PlaylistView.vue') },
+      { path: 'liked-songs', name: 'liked-songs', component: () => import('../views/LikedSongs.vue') }
     ]
   }
 ]

@@ -15,10 +15,8 @@
             <p class="text-sm text-white truncate">{{ player.currentSong?.title || 'Unknown' }}</p>
             <p class="text-xs text-spotify-light truncate">{{ player.currentSong?.artist || 'Unknown' }}</p>
           </div>
-          <!-- Lyrics button -->
-          <button @click.stop="showLyrics = true" class="px-2 py-1 text-[10px] font-bold rounded bg-spotify-lighter/30 text-spotify-green">
-            Lyrics
-          </button>
+          <!-- Like button -->
+          <LikeButton :song="player.currentSong" size="w-4 h-4" />
           <!-- Queue button -->
           <button @click.stop="player.toggleQueue()" class="w-8 h-8 flex items-center justify-center text-spotify-light hover:text-white">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
@@ -158,8 +156,9 @@
             <h2 class="text-xl font-bold text-white truncate">{{ player.currentSong?.title || 'Unknown' }}</h2>
             <p class="text-sm text-spotify-light truncate">{{ player.currentSong?.artist || 'Unknown Artist' }}</p>
           </div>
+          <LikeButton :song="player.currentSong" size="w-6 h-6" />
           <!-- Three-dot menu -->
-          <div class="relative flex-shrink-0 ml-3">
+          <div class="relative flex-shrink-0 ml-1">
             <button @click="showSongMenu = !showSongMenu" class="text-spotify-light hover:text-white p-1">
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
@@ -299,6 +298,7 @@ import { ref, computed, watch, nextTick, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { api } from '../utils/api'
+import LikeButton from './LikeButton.vue'
 
 const QueuePanel = defineAsyncComponent(() => import('./QueuePanel.vue'))
 

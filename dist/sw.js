@@ -1,4 +1,4 @@
-const CACHE_NAME = 'muzik-v1775099723391'
+const CACHE_NAME = 'muzik-v1775100264084'
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",
@@ -8,21 +8,23 @@ const PRECACHE_ASSETS = [
   "./assets/AddToPlaylist-BOvObY3V.js",
   "./assets/api-8JyAjF59.js",
   "./assets/auth-B2m0B019.js",
-  "./assets/Home-5FW_SnJG.js",
   "./assets/Home-Lvk1_uac.css",
+  "./assets/Home-oa9E_5-r.js",
   "./assets/howler-CdqKDEqT.js",
-  "./assets/index-4uZW6oqe.js",
-  "./assets/index-74aOC2ta.css",
-  "./assets/Layout-BUu-cvRD.js",
-  "./assets/Layout-CEsd_rTD.css",
-  "./assets/Library-D0S1UjSd.js",
+  "./assets/index-Bg-91Bhz.css",
+  "./assets/index-CHPevFeI.js",
+  "./assets/Layout-BLt0ziWq.js",
+  "./assets/Layout-DsgsRrwM.css",
+  "./assets/Library-CSduPgoA.js",
+  "./assets/LikeButton-FCwjJtsN.js",
+  "./assets/LikedSongs-DSBBMKQu.js",
   "./assets/pinia-Cm2UAAgM.js",
-  "./assets/player-CaqVSGzQ.js",
-  "./assets/PlaylistView-DlMnZLIz.js",
+  "./assets/player-C8UQBZPx.js",
+  "./assets/PlaylistView-D3idt55t.js",
   "./assets/QueuePanel-BMRmnZOL.css",
-  "./assets/QueuePanel-C4DA6BJ4.js",
-  "./assets/Search-DZSr8qUI.js",
-  "./assets/Upload-Ck8W9FQ0.js"
+  "./assets/QueuePanel-Du9FvpsG.js",
+  "./assets/Search-Dpat6WI_.js",
+  "./assets/Upload-54xMLJXr.js"
 ]
 
 // Install - pre-cache ALL app files so it works offline immediately

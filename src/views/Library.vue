@@ -9,6 +9,18 @@
       </button>
     </div>
 
+    <!-- Liked Songs card -->
+    <router-link to="/liked-songs"
+      class="flex items-center gap-3 p-3 rounded-lg bg-spotify-card hover:bg-spotify-lighter/30 transition-colors mb-2">
+      <div class="w-14 h-14 bg-gradient-to-br from-purple-700 to-blue-400 rounded flex-shrink-0 flex items-center justify-center shadow">
+        <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-base font-bold text-white">Liked Songs</p>
+        <p class="text-xs text-spotify-light">{{ likes.likedSongs.length }} songs</p>
+      </div>
+    </router-link>
+
     <!-- Downloads card -->
     <div @click="showDownloads = !showDownloads"
       class="flex items-center gap-3 p-3 rounded-lg bg-spotify-card hover:bg-spotify-lighter/30 transition-colors cursor-pointer mb-2">
@@ -38,6 +50,7 @@
           </p>
           <p class="text-xs text-spotify-light truncate">{{ song.artist || 'Unknown Artist' }}</p>
         </div>
+        <LikeButton :song="song" size="w-4 h-4" />
         <button @click.stop="openContextMenu(song)"
           class="md:opacity-0 md:group-hover:opacity-100 text-spotify-light hover:text-white transition-all p-1">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -139,10 +152,13 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { getAllSongs, deleteSong } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
+import { useLikesStore } from '../stores/likes'
 import { api } from '../utils/api'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
+import LikeButton from '../components/LikeButton.vue'
 
 const player = usePlayerStore()
+const likes = useLikesStore()
 const songs = ref([])
 const playlists = ref([])
 const showDownloads = ref(false)
