@@ -54,7 +54,6 @@
 <script setup>
 import { usePlayerStore } from '../stores/player'
 import { useLikesStore } from '../stores/likes'
-import { getAudioBlob } from '../utils/db'
 import { api } from '../utils/api'
 import LikeButton from '../components/LikeButton.vue'
 
@@ -71,20 +70,13 @@ async function buildSongObj(song) {
     filename: song.filename || null
   }
 
-  // 1. Check IndexedDB first (fastest)
-  const blob = await getAudioBlob(song.song_id).catch(() => null)
-  if (blob) {
-    obj.url = URL.createObjectURL(blob)
-    return obj
-  }
-
-  // 2. Has filename = play from server
+  // 1. Has filename = play from server (fast)
   if (song.filename) {
     obj.url = `/bars/music/${song.filename}`
     return obj
   }
 
-  // 3. YouTube song = get stream URL
+  // 2. YouTube song = get stream URL
   if (song.video_id) {
     try {
       const res = await api(`/bars/api/yt-stream.php?id=${song.video_id}`)

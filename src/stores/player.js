@@ -93,17 +93,23 @@ export const usePlayerStore = defineStore('player', {
         }).catch(() => {})
       }).catch(() => {})
 
-      // Use preloaded URL if available, otherwise resolve
+      // Resolve audio URL — server first (fast), IndexedDB fallback (offline)
       let url = song._preloadedUrl || null
       if (!url) {
-        const blob = await getAudioBlob(song.id)
-        if (blob) {
-          url = URL.createObjectURL(blob)
-        } else if (song.url) {
-          url = song.url
-        } else if (song.filename) {
+        if (song.filename) {
+          // Has filename = on server, play directly
           url = `/bars/music/${song.filename}`
+        } else if (song.url) {
+          // Has URL (stream or direct link)
+          url = song.url
         } else {
+          // Last resort: check IndexedDB (offline play)
+          const blob = await getAudioBlob(song.id)
+          if (blob) {
+            url = URL.createObjectURL(blob)
+          }
+        }
+        if (!url) {
           this.isPlaying = false
           return
         }
