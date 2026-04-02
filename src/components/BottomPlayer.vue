@@ -134,9 +134,10 @@
             <div v-else-if="lyricsText" class="flex-1 overflow-y-auto overscroll-contain" ref="fullPlayerLyricsScroll">
               <div class="py-4 space-y-3">
                 <p v-for="(line, i) in lyricsLines" :key="i"
-                  class="text-center text-lg font-medium transition-all duration-300 px-4"
-                  :class="activeLine === i ? 'text-white scale-105' : line.trim() ? 'text-spotify-light/60' : ''">
-                  {{ line || '\u00A0' }}
+                  class="text-center font-semibold px-4"
+                  :style="{ transition: 'all 0.4s ease-out', transform: activeLine === i ? 'scale(1.08)' : 'scale(1)', opacity: activeLine === i ? 1 : (line.trim() ? 0.4 : 0.1) }"
+                  :class="activeLine === i ? 'text-white text-xl' : 'text-spotify-light text-base'">
+                  {{ line.trim() || '\u00A0' }}
                 </p>
                 <div class="h-20"></div>
               </div>
@@ -258,11 +259,12 @@
           <div class="w-8 h-8 border-2 border-spotify-green border-t-transparent rounded-full animate-spin"></div>
         </div>
 
-        <div v-else-if="lyricsText" class="py-4 space-y-4">
+        <div v-else-if="lyricsText" class="py-4 space-y-3">
           <p v-for="(line, i) in lyricsLines" :key="i"
-            class="text-center text-lg font-medium transition-all duration-300"
-            :class="activeLine === i ? 'text-white text-xl' : line.trim() ? 'text-spotify-light/50' : ''">
-            {{ line || '\u00A0' }}
+            class="text-center font-semibold px-2"
+            :style="{ transition: 'all 0.4s ease-out', transform: activeLine === i ? 'scale(1.08)' : 'scale(1)', opacity: activeLine === i ? 1 : (line.trim() ? 0.4 : 0.1) }"
+            :class="activeLine === i ? 'text-white text-xl' : 'text-spotify-light text-base'">
+            {{ line.trim() || '\u00A0' }}
           </p>
           <div class="h-32"></div>
         </div>
@@ -416,6 +418,10 @@ const syncedData = ref(null)
 let lastLyricsSong = ''
 
 const lyricsLines = computed(() => {
+  // Use synced lyrics if available (more accurate)
+  if (syncedData.value && syncedData.value.length > 0) {
+    return syncedData.value.map(s => s.text)
+  }
   if (!lyricsText.value) return []
   return lyricsText.value.split('\n')
 })

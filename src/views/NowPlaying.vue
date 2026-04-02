@@ -36,9 +36,10 @@
         <div v-else-if="lyricsData" class="flex-1 overflow-y-auto overscroll-contain" ref="lyricsScroll">
           <div class="py-4 space-y-3">
             <p v-for="(line, i) in lyricsLines" :key="i"
-              class="text-center text-lg font-medium transition-all duration-300 px-4"
-              :class="activeLyricIndex === i ? 'text-white scale-105' : line.trim() ? 'text-spotify-light/60' : ''">
-              {{ line || '&nbsp;' }}
+              class="text-center font-semibold px-4"
+              :style="{ transition: 'all 0.4s ease-out', transform: activeLyricIndex === i ? 'scale(1.08)' : 'scale(1)', opacity: activeLyricIndex === i ? 1 : (line.trim() ? 0.4 : 0.1) }"
+              :class="activeLyricIndex === i ? 'text-white text-xl' : 'text-spotify-light text-base'">
+              {{ line.trim() || '\u00A0' }}
             </p>
             <!-- Extra padding at bottom -->
             <div class="h-20"></div>
@@ -125,8 +126,11 @@ const syncedLyrics = computed(() => {
   }).filter(Boolean)
 })
 
-// Plain lyrics lines
+// Lyrics lines - prefer synced data for accurate display
 const lyricsLines = computed(() => {
+  if (syncedLyrics.value && syncedLyrics.value.length > 0) {
+    return syncedLyrics.value.map(s => s.text)
+  }
   if (!lyricsData.value?.text) return []
   return lyricsData.value.text.split('\n')
 })
