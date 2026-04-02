@@ -82,15 +82,15 @@
     </div>
 
     <!-- Playlists -->
-    <div v-if="tab === 'playlists'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div v-if="tab === 'playlists'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       <router-link v-for="playlist in playlists" :key="playlist.id"
         :to="`/playlist/${playlist.id}`"
-        class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-lg p-4 transition-colors group">
-        <div class="aspect-square bg-spotify-lighter rounded-md flex items-center justify-center mb-3">
-          <svg class="w-12 h-12 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-xl p-3 transition-colors group">
+        <div class="aspect-square bg-gradient-to-br from-spotify-lighter/40 to-spotify-lighter/10 rounded-lg flex items-center justify-center mb-2">
+          <svg class="w-10 h-10 text-spotify-green/80" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
         </div>
-        <p class="text-sm font-semibold text-white truncate">{{ playlist.name }}</p>
-        <p class="text-xs text-spotify-light mt-1">{{ playlist.total || 0 }} songs · {{ playlist.downloaded || 0 }} saved</p>
+        <p class="text-sm font-bold text-white truncate">{{ playlist.name }}</p>
+        <p class="text-[11px] text-spotify-light mt-0.5">{{ playlist.total || 0 }} songs</p>
       </router-link>
       <div v-if="!playlists.length" class="col-span-full text-center py-12">
         <p class="text-spotify-light">No playlists yet</p>

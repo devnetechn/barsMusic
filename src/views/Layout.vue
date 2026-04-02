@@ -100,7 +100,7 @@
 
   <!-- Main App -->
   <div v-else class="fixed inset-0 flex flex-col bg-spotify-black">
-    <NavBar class="md:hidden flex-shrink-0" />
+    <!-- NavBar removed on mobile to prevent overlap -->
     <div class="flex flex-1 min-h-0">
       <Sidebar class="hidden md:flex flex-shrink-0" />
       <main class="flex-1 overflow-y-auto" :style="mainPadding">
