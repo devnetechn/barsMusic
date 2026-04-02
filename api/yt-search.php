@@ -5,35 +5,58 @@ header('Content-Type: application/json');
 
 $query = $_GET['q'] ?? '';
 if (empty($query)) {
-    echo json_encode(['results' => []]);
+    echo json_encode(['results' => [], 'type' => 'none']);
     exit;
 }
 
-// Try fast InnerTube API first
-$results = innertubeSearch($query);
+// Fetch more results to detect artist vs title search
+$results = innertubeSearch($query, 20);
 
-// Fallback to yt-dlp if InnerTube fails
 if (empty($results)) {
-    $results = ytdlpSearch($query);
+    $results = ytdlpSearch($query, 20);
 }
 
-// Rank results by relevance to query
-$queryWords = array_filter(explode(' ', strtolower($query)));
-usort($results, function($a, $b) use ($queryWords) {
-    $scoreA = 0;
-    $scoreB = 0;
-    $titleA = strtolower($a['title']);
-    $titleB = strtolower($b['title']);
-    foreach ($queryWords as $word) {
-        if (stripos($titleA, $word) !== false) $scoreA++;
-        if (stripos($titleB, $word) !== false) $scoreB++;
+// Detect if this is an artist search
+// If many results have the query in the author name, it's an artist search
+$queryLower = strtolower(trim($query));
+$artistMatches = 0;
+foreach ($results as $r) {
+    if (stripos($r['author'], $queryLower) !== false ||
+        similar_text(strtolower($r['author']), $queryLower) / max(strlen($r['author']), strlen($queryLower)) > 0.6) {
+        $artistMatches++;
     }
-    return $scoreB - $scoreA;
-});
+}
 
-echo json_encode(['results' => array_slice($results, 0, 10)]);
+$isArtistSearch = count($results) > 0 && ($artistMatches / count($results)) >= 0.4;
 
-function innertubeSearch($query) {
+if ($isArtistSearch) {
+    // Artist search: show all results, sorted by views
+    $limit = 20;
+    $type = 'artist';
+} else {
+    // Title search: show top 10, ranked by relevance
+    $limit = 10;
+    $type = 'title';
+    $queryWords = array_filter(explode(' ', $queryLower));
+    usort($results, function($a, $b) use ($queryWords) {
+        $scoreA = 0;
+        $scoreB = 0;
+        $titleA = strtolower($a['title']);
+        $titleB = strtolower($b['title']);
+        foreach ($queryWords as $word) {
+            if (stripos($titleA, $word) !== false) $scoreA++;
+            if (stripos($titleB, $word) !== false) $scoreB++;
+        }
+        return $scoreB - $scoreA;
+    });
+}
+
+echo json_encode([
+    'results' => array_slice($results, 0, $limit),
+    'type' => $type
+]);
+
+function innertubeSearch($query, $limit = 20) {
     $postData = json_encode([
         'context' => [
             'client' => [
@@ -94,17 +117,17 @@ function innertubeSearch($query) {
                 'thumbnail' => 'https://i.ytimg.com/vi/' . $videoId . '/hqdefault.jpg',
                 'viewCount' => $viewText
             ];
-            if (count($results) >= 10) break 2;
+            if (count($results) >= $limit) break 2;
         }
     }
     return $results;
 }
 
-function ytdlpSearch($query) {
+function ytdlpSearch($query, $limit = 20) {
     $python = getPythonCmd();
     $devnull = getDevNull();
     $safeQuery = preg_replace('/[^a-zA-Z0-9 \-]/', '', $query);
-    $searchArg = escapeshellarg('ytsearch10:' . $safeQuery);
+    $searchArg = escapeshellarg('ytsearch' . $limit . ':' . $safeQuery);
     $cmd = sprintf(
         '%s -m yt_dlp %s --flat-playlist --dump-json --no-warnings 2>%s',
         escapeshellarg($python),
@@ -130,7 +153,7 @@ function ytdlpSearch($query) {
             'thumbnail' => 'https://i.ytimg.com/vi/' . $d['id'] . '/hqdefault.jpg',
             'viewCount' => formatViews($d['view_count'] ?? 0)
         ];
-        if (count($results) >= 15) break;
+        if (count($results) >= $limit) break;
     }
     return $results;
 }
