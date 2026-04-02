@@ -97,9 +97,8 @@ export const usePlayerStore = defineStore('player', {
         }
       }
 
-      this.howl = new Howl({
+      const howlOpts = {
         src: [url],
-        format: [getFormat(song.filename || song.title)],
         html5: true,
         preload: true,
         volume: this.isMuted ? 0 : this.volume,
@@ -120,12 +119,23 @@ export const usePlayerStore = defineStore('player', {
           this._stopProgress()
           this.onSongEnd()
         },
+        onplayerror: () => {
+          // Mobile autoplay policy — retry on unlock
+          if (this.howl) {
+            this.howl.once('unlock', () => this.howl.play())
+          }
+        },
         onloaderror: (id, err) => {
           console.error('Load error:', err)
           this.isPlaying = false
         }
-      })
+      }
+      // Only add format hint for local files, not streams
+      if (song.filename) {
+        howlOpts.format = [getFormat(song.filename)]
+      }
 
+      this.howl = new Howl(howlOpts)
       this.howl.play()
 
       // Preload next song in background
@@ -395,60 +405,32 @@ export const usePlayerStore = defineStore('player', {
     },
 
     async _autoPlayRadio() {
-      // Search for popular music when no local songs and related fails
       const genres = ['OPM hits', 'RnB songs', 'trending pop songs', 'acoustic love songs', 'hip hop hits']
       const query = genres[Math.floor(Math.random() * genres.length)]
 
-      try {
-        const { api: apiFn } = await import('../utils/api')
-        const res = await apiFn(`/bars/api/yt-search.php?q=${encodeURIComponent(query)}`)
-        const data = await res.json()
-        const results = data.results || []
-        if (results.length === 0) return
+      const { api: apiFn } = await import('../utils/api')
+      const res = await apiFn(`/bars/api/yt-search.php?q=${encodeURIComponent(query)}`)
+      const data = await res.json()
+      const results = data.results || []
+      if (results.length === 0) return
 
-        const pick = results[Math.floor(Math.random() * results.length)]
+      const pick = results[Math.floor(Math.random() * results.length)]
 
-        // Get stream URL
-        const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
-        const streamData = await streamRes.json()
-        if (!streamData.success) return
+      const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
+      const streamData = await streamRes.json()
+      if (!streamData.success) return
 
-        this.stop()
-        const song = {
-          id: `yt_${pick.videoId}`,
-          title: pick.title,
-          artist: pick.author,
-          album: 'Radio',
-          cover: pick.thumbnail
-        }
+      const song = {
+        id: `yt_${pick.videoId}`,
+        title: pick.title,
+        artist: pick.author,
+        album: 'Radio',
+        cover: pick.thumbnail,
+        url: streamData.url
+      }
 
-        this.currentSong = song
-        this.queue = []
-        this.queueIndex = -1
-
-        this.howl = new Howl({
-          src: [streamData.url],
-          html5: true,
-          volume: this.isMuted ? 0 : this.volume,
-          onplay: () => { this.isPlaying = true; this.duration = this.howl.duration(); this._startProgress() },
-          onpause: () => { this.isPlaying = false; this._stopProgress() },
-          onstop: () => { this.isPlaying = false; this._stopProgress() },
-          onend: () => { this._stopProgress(); this._autoPlayNext() },
-          onloaderror: () => { this._autoPlayNext() },
-          onplayerror: () => { this._autoPlayNext() }
-        })
-        this.howl.play()
-
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: song.title, artist: song.artist, album: 'Radio',
-            artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
-          })
-        }
-
-        // Auto-download in background
-        autoDownload(pick.videoId, pick.title, pick.author, pick.thumbnail)
-      } catch {}
+      await this.playSong(song)
+      autoDownload(pick.videoId, pick.title, pick.author, pick.thumbnail)
     },
 
     async _autoPlayRelated() {
@@ -464,104 +446,29 @@ export const usePlayerStore = defineStore('player', {
       const results = data.results || []
       if (results.length === 0) throw new Error('No related results')
 
-      try {
+      // Pick a random candidate from top 5
+      const top = results.slice(0, 5)
+      const pick = top[Math.floor(Math.random() * top.length)]
 
-        // Try multiple candidates in case one fails
-        const shuffled = [...results.slice(0, 5)].sort(() => Math.random() - 0.5)
+      // Get stream URL
+      const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
+      const streamData = await streamRes.json()
+      if (!streamData.success) throw new Error('Stream failed')
 
-        for (const pick of shuffled) {
-          try {
-            const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
-            const streamData = await streamRes.json()
-            if (!streamData.success) continue
-
-            this.stop()
-
-            const song = {
-              id: `yt_${pick.videoId}`,
-              title: pick.title,
-              artist: pick.author || this.currentSong.artist,
-              album: 'Auto-Play',
-              cover: pick.thumbnail
-            }
-
-            this.currentSong = song
-            this.queue = []
-            this.queueIndex = -1
-
-            // Try to play, with error recovery
-            const played = await new Promise((resolve) => {
-              this.howl = new Howl({
-                src: [streamData.url],
-                html5: true,
-                volume: this.isMuted ? 0 : this.volume,
-                onplay: () => {
-                  this.isPlaying = true
-                  this.duration = this.howl.duration()
-                  this._startProgress()
-                  resolve(true)
-                },
-                onpause: () => {
-                  this.isPlaying = false
-                  this._stopProgress()
-                },
-                onstop: () => {
-                  this.isPlaying = false
-                  this._stopProgress()
-                },
-                onend: () => {
-                  this._stopProgress()
-                  this._autoPlayNext()
-                },
-                onloaderror: () => {
-                  console.error('Auto-play load error, trying next...')
-                  resolve(false)
-                },
-                onplayerror: () => {
-                  console.error('Auto-play play error, trying next...')
-                  // Retry once on autoplay policy block
-                  this.howl.once('unlock', () => this.howl.play())
-                  setTimeout(() => resolve(false), 5000)
-                }
-              })
-
-              this.howl.play()
-
-              // Timeout: if nothing happens in 15s, try next
-              setTimeout(() => resolve(false), 15000)
-            })
-
-            if (played) {
-              if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                  title: song.title || 'Unknown',
-                  artist: song.artist || 'Unknown',
-                  album: 'Auto-Play',
-                  artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
-                })
-              }
-              // Auto-download in background
-              autoDownload(pick.videoId, pick.title, pick.author || '', pick.thumbnail)
-              return // Successfully playing
-            }
-
-            // Failed, clean up and try next
-            if (this.howl) {
-              this.howl.unload()
-              this.howl = null
-            }
-          } catch {
-            continue
-          }
-        }
-
-        // All candidates failed — throw so _autoPlayNext tries local
-        this.isPlaying = false
-        throw new Error('No online candidates')
-      } catch (err) {
-        console.error('Auto-play related failed:', err)
-        throw err
+      // Use playSong — same flow as user-triggered play
+      const song = {
+        id: `yt_${pick.videoId}`,
+        title: pick.title,
+        artist: pick.author || this.currentSong.artist,
+        album: 'Auto-Play',
+        cover: pick.thumbnail,
+        url: streamData.url
       }
+
+      await this.playSong(song)
+
+      // Auto-download in background
+      autoDownload(pick.videoId, pick.title, pick.author || '', pick.thumbnail)
     },
 
     _startProgress() {
