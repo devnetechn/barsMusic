@@ -81,19 +81,39 @@
       </div>
     </div>
 
-    <!-- Playlists -->
-    <div v-if="tab === 'playlists'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      <router-link v-for="playlist in playlists" :key="playlist.id"
-        :to="`/playlist/${playlist.id}`"
-        class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-xl p-3 transition-colors group">
-        <div class="aspect-square bg-gradient-to-br from-spotify-lighter/40 to-spotify-lighter/10 rounded-lg flex items-center justify-center mb-2">
-          <svg class="w-10 h-10 text-spotify-green/80" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+    <!-- Playlists (Spotify-style list on mobile, grid on desktop) -->
+    <div v-if="tab === 'playlists'">
+      <!-- Mobile: list -->
+      <div class="md:hidden space-y-1">
+        <router-link v-for="playlist in playlists" :key="playlist.id"
+          :to="`/playlist/${playlist.id}`"
+          class="flex items-center gap-3 p-2 rounded-md hover:bg-spotify-card transition-colors">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-700 to-blue-900 rounded flex-shrink-0 flex items-center justify-center shadow">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate">{{ playlist.name }}</p>
+            <p class="text-xs text-spotify-light">Playlist · {{ playlist.total || 0 }} songs</p>
+          </div>
+        </router-link>
+        <div v-if="!playlists.length" class="text-center py-12">
+          <p class="text-spotify-light">No playlists yet</p>
         </div>
-        <p class="text-sm font-bold text-white truncate">{{ playlist.name }}</p>
-        <p class="text-[11px] text-spotify-light mt-0.5">{{ playlist.total || 0 }} songs</p>
-      </router-link>
-      <div v-if="!playlists.length" class="col-span-full text-center py-12">
-        <p class="text-spotify-light">No playlists yet</p>
+      </div>
+      <!-- Desktop: grid -->
+      <div class="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <router-link v-for="playlist in playlists" :key="playlist.id"
+          :to="`/playlist/${playlist.id}`"
+          class="bg-spotify-card hover:bg-spotify-lighter/30 rounded-lg p-4 transition-colors group">
+          <div class="aspect-square bg-gradient-to-br from-purple-700 to-blue-900 rounded-md flex items-center justify-center mb-3 shadow-lg">
+            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-white truncate">{{ playlist.name }}</p>
+          <p class="text-xs text-spotify-light mt-1">Playlist · {{ playlist.total || 0 }} songs</p>
+        </router-link>
+        <div v-if="!playlists.length" class="col-span-full text-center py-12">
+          <p class="text-spotify-light">No playlists yet</p>
+        </div>
       </div>
     </div>
 
