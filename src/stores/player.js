@@ -547,7 +547,8 @@ export const usePlayerStore = defineStore('player', {
         if (this.howl && this.isPlaying) {
           const seek = this.howl.seek()
           if (typeof seek === 'number' && seek >= 0) {
-            this.currentTime = seek
+            // Add 0.3s offset to compensate for audio buffer delay
+            this.currentTime = seek + 0.3
           }
 
           // Update duration if not set yet
@@ -565,7 +566,7 @@ export const usePlayerStore = defineStore('player', {
             }
           }
         }
-      }, 500)
+      }, 200)
     },
 
     _startCrossfade() {
