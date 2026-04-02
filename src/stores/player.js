@@ -174,6 +174,29 @@ export const usePlayerStore = defineStore('player', {
         navigator.mediaSession.setActionHandler('previoustrack', () => this.prev())
         navigator.mediaSession.setActionHandler('nexttrack', () => this.next())
       }
+
+      // Handle Bluetooth/audio route changes - auto-resume
+      if (!this._audioHandlersSet) {
+        this._audioHandlersSet = true
+
+        // Resume when audio becomes available again (Bluetooth connect/disconnect)
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && this.howl && this.currentSong && !this.isPlaying) {
+            // Page became visible and was playing - try resume
+            setTimeout(() => {
+              if (this.howl && !this.isPlaying && this.currentTime > 0) {
+                this.howl.play()
+              }
+            }, 500)
+          }
+        })
+
+        // Handle audio interruption (phone call, Bluetooth switch)
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.setActionHandler('pause', () => this.pause())
+          navigator.mediaSession.setActionHandler('play', () => this.resume())
+        }
+      }
     },
 
     pause() {
@@ -522,18 +545,27 @@ export const usePlayerStore = defineStore('player', {
       this._crossfading = false
       this._progressInterval = setInterval(() => {
         if (this.howl && this.isPlaying) {
-          this.currentTime = this.howl.seek() || 0
+          const seek = this.howl.seek()
+          if (typeof seek === 'number' && seek >= 0) {
+            this.currentTime = seek
+          }
+
+          // Update duration if not set yet
+          if (this.howl.duration() > 0) {
+            this.duration = this.howl.duration()
+          }
 
           // Crossfade: start fading 4 seconds before end
-          if (!this._crossfading && this.duration > 10 && this.currentTime > 0) {
+          // Only if we've played at least 30s (avoid false triggers on loading)
+          if (!this._crossfading && this.duration > 30 && this.currentTime > 30) {
             const remaining = this.duration - this.currentTime
-            if (remaining <= 4 && remaining > 0) {
+            if (remaining <= 4 && remaining > 0.5) {
               this._crossfading = true
               this._startCrossfade()
             }
           }
         }
-      }, 250)
+      }, 500)
     },
 
     _startCrossfade() {
