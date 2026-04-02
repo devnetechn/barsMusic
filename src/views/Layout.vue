@@ -203,6 +203,11 @@ async function handleSignup() {
 }
 
 onMounted(async () => {
+  // Request persistent storage so IndexedDB doesn't get cleared
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {})
+  }
+
   await auth.checkAuth()
   if (auth.authenticated) {
     likesStore.loadLikedSongs()

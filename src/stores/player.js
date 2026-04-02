@@ -93,21 +93,29 @@ export const usePlayerStore = defineStore('player', {
         }).catch(() => {})
       }).catch(() => {})
 
-      // Resolve audio URL — server first (fast), IndexedDB fallback (offline)
+      // Resolve audio URL
       let url = song._preloadedUrl || null
       if (!url) {
         if (song.filename) {
-          // Has filename = on server, play directly
+          // Has filename = on server
           url = `/bars/music/${song.filename}`
         } else if (song.url) {
           // Has URL (stream or direct link)
           url = song.url
-        } else {
-          // Last resort: check IndexedDB (offline play)
+        } else if (song.video_id || song.videoId) {
+          // YouTube song — fetch stream URL
+          try {
+            const { api: apiFn } = await import('../utils/api')
+            const vid = song.video_id || song.videoId
+            const res = await apiFn(`/bars/api/yt-stream.php?id=${vid}`)
+            const data = await res.json()
+            if (data.success) url = data.url
+          } catch {}
+        }
+        // Last resort: IndexedDB (offline)
+        if (!url) {
           const blob = await getAudioBlob(song.id)
-          if (blob) {
-            url = URL.createObjectURL(blob)
-          }
+          if (blob) url = URL.createObjectURL(blob)
         }
         if (!url) {
           this.isPlaying = false
@@ -332,6 +340,12 @@ export const usePlayerStore = defineStore('player', {
     },
 
     onSongEnd() {
+      // Skip if crossfade already handled the transition
+      if (this._crossfading) {
+        this._crossfading = false
+        return
+      }
+
       if (this.repeat === 'one') {
         this.seek(0)
         this.howl.play()
@@ -344,7 +358,6 @@ export const usePlayerStore = defineStore('player', {
         if (hasMore) {
           this.next()
         } else if (this._nextAutoplay) {
-          // Play preloaded autoplay song INSTANTLY (works on iOS)
           const { song, howl } = this._nextAutoplay
           this._nextAutoplay = null
           this._stopProgress()
@@ -354,6 +367,12 @@ export const usePlayerStore = defineStore('player', {
           this.queue = []
           this.queueIndex = -1
           this.howl = howl
+
+          // Add error handler for expired URLs
+          this.howl.once('loaderror', () => {
+            // Preloaded URL expired — fall back to async autoplay
+            this._autoPlayNext()
+          })
           this.howl.play()
 
           if ('mediaSession' in navigator) {
@@ -716,7 +735,7 @@ export const usePlayerStore = defineStore('player', {
         if (!song) return
 
         // Create Howl ready to play (preloaded)
-        const howl = new Howl({
+        const howlOpts = {
           src: [song.url],
           html5: true,
           preload: true,
@@ -733,8 +752,9 @@ export const usePlayerStore = defineStore('player', {
             if (this.howl) this.howl.once('unlock', () => this.howl.play())
           },
           onloaderror: () => { this.isPlaying = false }
-        })
-        if (song.filename) howl._format = [getFormat(song.filename)]
+        }
+        if (song.filename) howlOpts.format = [getFormat(song.filename)]
+        const howl = new Howl(howlOpts)
 
         this._nextAutoplay = { song, howl }
 
