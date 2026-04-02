@@ -452,18 +452,19 @@ export const usePlayerStore = defineStore('player', {
     },
 
     async _autoPlayRelated() {
-      if (!this.currentSong) return
+      if (!this.currentSong) throw new Error('No current song')
+
+      const { api: apiFn } = await import('../utils/api')
+      const params = new URLSearchParams({
+        title: this.currentSong.title || '',
+        artist: this.currentSong.artist || ''
+      })
+      const res = await apiFn(`/bars/api/related.php?${params}`)
+      const data = await res.json()
+      const results = data.results || []
+      if (results.length === 0) throw new Error('No related results')
 
       try {
-        const { api: apiFn } = await import('../utils/api')
-        const params = new URLSearchParams({
-          title: this.currentSong.title || '',
-          artist: this.currentSong.artist || ''
-        })
-        const res = await apiFn(`/bars/api/related.php?${params}`)
-        const data = await res.json()
-        const results = data.results || []
-        if (results.length === 0) return
 
         // Try multiple candidates in case one fails
         const shuffled = [...results.slice(0, 5)].sort(() => Math.random() - 0.5)
@@ -510,7 +511,7 @@ export const usePlayerStore = defineStore('player', {
                 },
                 onend: () => {
                   this._stopProgress()
-                  this._autoPlayRelated()
+                  this._autoPlayNext()
                 },
                 onloaderror: () => {
                   console.error('Auto-play load error, trying next...')
@@ -518,14 +519,16 @@ export const usePlayerStore = defineStore('player', {
                 },
                 onplayerror: () => {
                   console.error('Auto-play play error, trying next...')
-                  resolve(false)
+                  // Retry once on autoplay policy block
+                  this.howl.once('unlock', () => this.howl.play())
+                  setTimeout(() => resolve(false), 5000)
                 }
               })
 
               this.howl.play()
 
-              // Timeout: if nothing happens in 10s, try next
-              setTimeout(() => resolve(false), 10000)
+              // Timeout: if nothing happens in 15s, try next
+              setTimeout(() => resolve(false), 15000)
             })
 
             if (played) {
