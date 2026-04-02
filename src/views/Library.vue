@@ -39,7 +39,7 @@
           <p class="text-xs text-spotify-light truncate">{{ song.artist || 'Unknown Artist' }}</p>
         </div>
         <button @click.stop="openContextMenu(song)"
-          class="opacity-0 group-hover:opacity-100 text-spotify-light hover:text-white transition-all p-1">
+          class="md:opacity-0 md:group-hover:opacity-100 text-spotify-light hover:text-white transition-all p-1">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
         </button>
       </div>
