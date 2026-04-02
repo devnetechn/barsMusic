@@ -17,20 +17,49 @@ $queries = [
 ];
 
 shuffle($queries);
-$selectedQueries = array_slice($queries, 0, 3);
+$selectedQueries = array_slice($queries, 0, 2);
 $results = [];
 $seenIds = [];
 
+$python = getPythonCmd();
+$devnull = getDevNull();
+
 foreach ($selectedQueries as $query) {
-    $searchResults = innertubeSearch($query, 10);
-    foreach ($searchResults as $r) {
-        if (in_array($r['videoId'], $seenIds)) continue;
+    $safeQuery = preg_replace('/[^a-zA-Z0-9 \-]/', '', $query);
+    $searchArg = escapeshellarg('ytsearch8:' . $safeQuery);
+    $cmd = sprintf(
+        '%s -m yt_dlp %s --flat-playlist --dump-json --no-warnings 2>%s',
+        escapeshellarg($python),
+        $searchArg,
+        $devnull
+    );
+    $output = [];
+    exec($cmd, $output);
 
-        $titleLower = strtolower($r['title']);
-        if (preg_match('/(nonstop|compilation|playlist|mix |1 hour|medley|mashup|top \d+|best of)/i', $titleLower)) continue;
+    foreach ($output as $line) {
+        $d = json_decode($line, true);
+        if (!$d || empty($d['id'])) continue;
 
-        $seenIds[] = $r['videoId'];
-        $results[] = $r;
+        $dur = $d['duration'] ?? null;
+        if ($dur !== null && $dur > 420) continue;
+
+        if (in_array($d['id'], $seenIds)) continue;
+
+        $title = $d['title'] ?? 'Unknown';
+        if (preg_match('/(nonstop|compilation|playlist|mix |1 hour|medley|mashup|top \d+|best of)/i', $title)) continue;
+
+        $seenIds[] = $d['id'];
+        $m = $dur ? floor($dur / 60) : 0;
+        $s = $dur ? $dur % 60 : 0;
+        $results[] = [
+            'videoId' => $d['id'],
+            'title' => $title,
+            'author' => $d['channel'] ?? $d['uploader'] ?? 'Unknown',
+            'duration' => $m . ':' . str_pad($s, 2, '0', STR_PAD_LEFT),
+            'durationSeconds' => $dur,
+            'thumbnail' => 'https://i.ytimg.com/vi/' . $d['id'] . '/hqdefault.jpg',
+            'viewCount' => formatViews($d['view_count'] ?? 0)
+        ];
         if (count($results) >= 10) break 2;
     }
 }
@@ -38,66 +67,8 @@ foreach ($selectedQueries as $query) {
 shuffle($results);
 echo json_encode(['results' => array_slice($results, 0, 10)]);
 
-function innertubeSearch($query, $limit = 10) {
-    $postData = json_encode([
-        'context' => [
-            'client' => [
-                'clientName' => 'WEB',
-                'clientVersion' => '2.20240101.00.00',
-                'hl' => 'en',
-                'gl' => 'PH'
-            ]
-        ],
-        'query' => $query,
-        'params' => 'EgIQAQ%3D%3D'
-    ]);
-
-    $ch = curl_init('https://www.youtube.com/youtubei/v1/search?prettyPrint=false');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $postData,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        ],
-        CURLOPT_TIMEOUT => 8,
-        CURLOPT_SSL_VERIFYPEER => false
-    ]);
-
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    $data = json_decode($response, true);
-    $results = [];
-    $contents = $data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'] ?? [];
-
-    foreach ($contents as $section) {
-        $items = $section['itemSectionRenderer']['contents'] ?? [];
-        foreach ($items as $item) {
-            $video = $item['videoRenderer'] ?? null;
-            if (!$video) continue;
-            $videoId = $video['videoId'] ?? '';
-            if (empty($videoId)) continue;
-
-            $durationText = $video['lengthText']['simpleText'] ?? '';
-            $parts = array_reverse(explode(':', $durationText));
-            $secs = 0;
-            foreach ($parts as $i => $p) $secs += intval($p) * pow(60, $i);
-
-            if ($secs > 420 || $secs < 60) continue;
-
-            $results[] = [
-                'videoId' => $videoId,
-                'title' => $video['title']['runs'][0]['text'] ?? 'Unknown',
-                'author' => $video['ownerText']['runs'][0]['text'] ?? 'Unknown',
-                'duration' => $durationText,
-                'durationSeconds' => $secs,
-                'thumbnail' => 'https://i.ytimg.com/vi/' . $videoId . '/hqdefault.jpg',
-                'viewCount' => $video['viewCountText']['simpleText'] ?? ''
-            ];
-            if (count($results) >= $limit) break 2;
-        }
-    }
-    return $results;
+function formatViews($count) {
+    if ($count >= 1000000) return round($count / 1000000, 1) . 'M views';
+    if ($count >= 1000) return round($count / 1000, 1) . 'K views';
+    return $count . ' views';
 }
