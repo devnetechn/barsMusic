@@ -61,33 +61,58 @@ import LikeButton from '../components/LikeButton.vue'
 const player = usePlayerStore()
 const likes = useLikesStore()
 
-function buildSongObj(song) {
-  return {
+async function buildSongObj(song) {
+  const obj = {
     id: song.song_id,
     title: song.title,
     artist: song.artist,
     cover: song.cover,
     video_id: song.video_id,
-    filename: song.filename || null,
-    url: song.filename ? `/bars/music/${song.filename}` : null
+    filename: song.filename || null
   }
-}
 
-async function playSong(song, index) {
-  const songObj = buildSongObj(song)
+  // 1. Check IndexedDB first (fastest)
+  const blob = await getAudioBlob(song.song_id).catch(() => null)
+  if (blob) {
+    obj.url = URL.createObjectURL(blob)
+    return obj
+  }
 
-  // If no filename (not downloaded), try to get stream URL
-  if (!songObj.url && song.video_id) {
+  // 2. Has filename = play from server
+  if (song.filename) {
+    obj.url = `/bars/music/${song.filename}`
+    return obj
+  }
+
+  // 3. YouTube song = get stream URL
+  if (song.video_id) {
     try {
       const res = await api(`/bars/api/yt-stream.php?id=${song.video_id}`)
       const data = await res.json()
-      if (data.success) songObj.url = data.url
+      if (data.success) obj.url = data.url
     } catch {}
   }
 
-  if (!songObj.url) return // Can't play without URL
+  return obj
+}
 
-  const allSongs = likes.likedSongs.map(s => buildSongObj(s))
+async function playSong(song, index) {
+  const songObj = await buildSongObj(song)
+  if (!songObj.url) return
+
+  // Build queue with basic info (URLs resolved on play)
+  const allSongs = likes.likedSongs.map(s => ({
+    id: s.song_id,
+    title: s.title,
+    artist: s.artist,
+    cover: s.cover,
+    video_id: s.video_id,
+    filename: s.filename || null,
+    url: s.filename ? `/bars/music/${s.filename}` : null
+  }))
+  // Set resolved URL for current song
+  allSongs[index] = songObj
+
   player.playSong(songObj, allSongs, index)
 }
 

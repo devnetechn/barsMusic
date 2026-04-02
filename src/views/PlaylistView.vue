@@ -145,7 +145,8 @@ function buildSong(item) {
       title: item.title,
       artist: item.artist,
       cover: item.thumbnail,
-      filename: item.filename || null
+      filename: item.filename || null,
+      url: item.filename ? `/bars/music/${item.filename}` : null
     }
   }
   // YouTube song not yet downloaded — will need stream URL
