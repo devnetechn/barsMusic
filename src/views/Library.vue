@@ -90,9 +90,10 @@
     </div>
 
     <!-- Context Menu (Bottom Sheet) -->
-    <div v-if="contextSong" class="fixed inset-0 bg-black/60 z-[60] flex items-end justify-center"
+    <div v-if="contextSong" class="fixed inset-0 bg-black/60 z-[90] flex items-end justify-center"
       @click.self="contextSong = null">
-      <div class="bg-spotify-card rounded-t-2xl w-full max-w-lg p-4 pb-8 animate-slide-up">
+      <div class="bg-spotify-card rounded-t-2xl w-full max-w-lg p-4 animate-slide-up"
+        style="padding-bottom: calc(env(safe-area-inset-bottom) + 8rem)">
         <div class="flex items-center gap-3 mb-4 pb-4 border-b border-spotify-lighter/20">
           <div class="w-12 h-12 bg-spotify-lighter rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
             <img v-if="contextSong.cover" :src="contextSong.cover" class="w-full h-full object-cover" />

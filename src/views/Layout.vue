@@ -157,7 +157,7 @@ const auth = useAuthStore()
 
 // Extra bottom padding for main content so it doesn't hide behind player + nav
 const mainPadding = computed(() => {
-  return { paddingBottom: '1rem' }
+  return { paddingBottom: playerStore.currentSong ? '4rem' : '1rem' }
 })
 
 const authTab = ref('login')
