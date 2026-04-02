@@ -73,10 +73,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $input = json_decode(file_get_contents('php://input'), true);
     $songId = $input['id'] ?? 0;
 
-    // Only delete own songs
-    $stmt = $db->prepare('DELETE FROM songs WHERE id = ? AND user_id = ?');
-    $stmt->execute([$songId, $userId]);
+    if (isAdmin()) {
+        // Admin: get filename first, then delete from DB + file
+        $stmt = $db->prepare('SELECT filename FROM songs WHERE id = ?');
+        $stmt->execute([$songId]);
+        $song = $stmt->fetch();
 
-    echo json_encode(['success' => $stmt->rowCount() > 0]);
+        if ($song) {
+            // Delete from database (all users' copies)
+            $stmt = $db->prepare('DELETE FROM songs WHERE id = ?');
+            $stmt->execute([$songId]);
+
+            // Delete file from server
+            $filePath = __DIR__ . '/../music/' . $song['filename'];
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+
+            // Also remove from liked_songs
+            $stmt = $db->prepare('DELETE FROM liked_songs WHERE song_id = ? OR song_id = ?');
+            $stmt->execute([$songId, 'server_' . $songId]);
+
+            echo json_encode(['success' => true, 'deleted_file' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Song not found']);
+        }
+    } else {
+        // Regular user: only delete own songs
+        $stmt = $db->prepare('DELETE FROM songs WHERE id = ? AND user_id = ?');
+        $stmt->execute([$songId, $userId]);
+        echo json_encode(['success' => $stmt->rowCount() > 0]);
+    }
     exit;
 }

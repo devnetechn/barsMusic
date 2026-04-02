@@ -129,7 +129,10 @@
             </p>
             <p class="text-xs text-spotify-light truncate">{{ song.artist || 'Unknown Artist' }}</p>
           </div>
-          <span class="text-xs text-spotify-light">{{ formatSize(song.size) }}</span>
+          <span class="text-xs text-spotify-light mr-2">{{ formatSize(song.size) }}</span>
+          <button @click.stop="adminDelete(song, index)" class="text-spotify-light hover:text-red-400 transition-colors p-1">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
         </div>
       </div>
     </section>
@@ -271,6 +274,19 @@ const recentSongs = computed(() => {
 function playSong(song, index) {
   const idx = index ?? songs.value.findIndex(s => s.id === song.id)
   player.playSong(song, songs.value, idx)
+}
+
+async function adminDelete(song, index) {
+  const realId = String(song.id).replace('server_', '')
+  if (!confirm(`Delete "${song.title}" from server?\n\nThis will remove the file and database entry permanently.`)) return
+  try {
+    await api('/bars/api/songs.php', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: realId })
+    })
+    songs.value.splice(index, 1)
+  } catch {}
 }
 
 function formatSize(bytes) {
