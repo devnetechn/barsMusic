@@ -60,10 +60,9 @@ export const usePlayerStore = defineStore('player', {
 
       if (isCrossfade) {
         // Don't stop — let old song fade out
-        const oldHowl = this.howl
+        // Don't stop — crossfade handles the old howl cleanup
         this.howl = null
         this._stopProgress()
-        setTimeout(() => { if (oldHowl) oldHowl.unload() }, 3500)
       } else {
         this.stop()
       }
@@ -598,8 +597,13 @@ export const usePlayerStore = defineStore('player', {
       if (!this.howl) return
       const vol = this.isMuted ? 0 : this.volume
 
-      // Fade out current song
-      this.howl.fade(vol, 0, 3500)
+      // Disable onend on old howl so it doesn't double-advance
+      const oldHowlRef = this.howl
+      oldHowlRef.off('end')
+
+      // Fade out current song, then unload
+      oldHowlRef.fade(vol, 0, 3500)
+      setTimeout(() => { try { oldHowlRef.unload() } catch {} }, 4000)
 
       // Check what to play next
       const hasUserQueue = this.userQueue.length > 0
