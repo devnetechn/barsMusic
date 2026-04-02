@@ -3,25 +3,17 @@
     <!-- 1. Greeting -->
     <h1 class="text-2xl md:text-3xl font-bold text-white mb-6">{{ greeting }}</h1>
 
-    <!-- 2. Recently Played -->
-    <section v-if="recentlyPlayed.length" class="mb-8">
-      <h2 class="text-xl font-bold text-white mb-4">Recently Played</h2>
-      <div class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x scrollbar-none">
-        <div v-for="item in recentlyPlayed" :key="item.songId || item.title"
+    <!-- 2. Recently Played - Spotify compact cards -->
+    <section v-if="recentlyPlayed.length" class="mb-6">
+      <div class="grid grid-cols-2 gap-2">
+        <div v-for="item in recentlyPlayed.slice(0, 6)" :key="item.songId || item.title"
           @click="playFromHistory(item)"
-          class="flex-shrink-0 w-36 cursor-pointer group">
-          <div class="relative mb-2">
-            <div class="w-36 h-36 bg-spotify-lighter rounded-md flex items-center justify-center overflow-hidden shadow-lg">
-              <img v-if="item.cover" :src="item.cover" class="w-full h-full object-cover" @error="$event.target.style.display='none'" />
-              <svg v-if="!item.cover" class="w-10 h-10 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-            </div>
-            <button class="absolute bottom-2 right-2 w-8 h-8 bg-spotify-green rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all"
-              @click.stop="playFromHistory(item)">
-              <svg class="w-4 h-4 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
+          class="flex items-center bg-spotify-card/60 hover:bg-spotify-card rounded overflow-hidden cursor-pointer group h-12">
+          <div class="w-12 h-12 bg-spotify-lighter flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img v-if="item.cover" :src="item.cover" class="w-full h-full object-cover" @error="$event.target.style.display='none'" />
+            <svg v-if="!item.cover" class="w-6 h-6 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
           </div>
-          <p class="text-sm font-semibold text-white truncate">{{ item.title }}</p>
-          <p class="text-xs text-spotify-light truncate mt-0.5">{{ item.artist || 'Unknown Artist' }}</p>
+          <p class="text-xs font-semibold text-white truncate px-2 flex-1">{{ item.title }}</p>
         </div>
       </div>
     </section>
@@ -115,8 +107,8 @@
       <p class="text-spotify-light text-sm">Loading featured songs...</p>
     </div>
 
-    <!-- All Songs -->
-    <section v-if="songs.length" class="mb-8">
+    <!-- All Songs (Admin only) -->
+    <section v-if="auth.isAdmin && songs.length" class="mb-8">
       <h2 class="text-xl font-bold text-white mb-4">All Songs</h2>
       <div class="space-y-1">
         <div v-for="(song, index) in songs" :key="song.id"
@@ -142,8 +134,26 @@
       </div>
     </section>
 
+    <!-- Quick Play (for regular users - show shortcuts to search/library) -->
+    <section v-if="!auth.isAdmin && !recentlyPlayed.length && !songs.length" class="mb-8">
+      <div class="grid grid-cols-2 gap-3">
+        <router-link to="/search" class="flex items-center gap-3 bg-spotify-card/80 rounded-lg p-3 hover:bg-spotify-lighter/30 transition-colors">
+          <div class="w-10 h-10 bg-gradient-to-br from-spotify-green to-green-700 rounded flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-white">Search</span>
+        </router-link>
+        <router-link to="/library" class="flex items-center gap-3 bg-spotify-card/80 rounded-lg p-3 hover:bg-spotify-lighter/30 transition-colors">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-800 rounded flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-white">Library</span>
+        </router-link>
+      </div>
+    </section>
+
     <!-- Empty state: no songs AND no featured -->
-    <section v-if="songs.length === 0 && !featured.length && !featuredLoading">
+    <section v-if="!auth.isAdmin && songs.length === 0 && !recentlyPlayed.length && !featured.length && !featuredLoading">
       <div class="flex flex-col items-center justify-center py-20">
         <svg class="w-16 h-16 text-spotify-light mb-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
         <h2 class="text-xl font-bold text-white mb-2">No music yet</h2>
