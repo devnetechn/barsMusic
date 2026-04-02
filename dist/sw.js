@@ -1,4 +1,4 @@
-const CACHE_NAME = 'muzik-v1775100955391'
+const CACHE_NAME = 'muzik-v1775101083552'
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",
@@ -9,23 +9,23 @@ const PRECACHE_ASSETS = [
   "./assets/api-BTuMjAYx.js",
   "./assets/auth-DcFo41KE.js",
   "./assets/db-Ds1lkQJc.js",
-  "./assets/Home-DNdjeiRT.js",
+  "./assets/Home-DMS1ad7Z.js",
   "./assets/Home-Lvk1_uac.css",
   "./assets/howler-CdqKDEqT.js",
-  "./assets/index-CZ-w-LUc.js",
   "./assets/index-DLYt8WQM.css",
-  "./assets/Layout-2RH4nKsZ.js",
+  "./assets/index-g5kQOYxJ.js",
   "./assets/Layout-BGNvgM3r.css",
-  "./assets/Library-Ci44y75R.js",
+  "./assets/Layout-NxJLh5G0.js",
+  "./assets/Library-pZyN8Rac.js",
   "./assets/LikeButton-ARsjghOy.js",
-  "./assets/LikedSongs-DWEghZqi.js",
+  "./assets/LikedSongs-JelU6sT_.js",
   "./assets/likes-SJCxC8DQ.js",
   "./assets/pinia-Cm2UAAgM.js",
-  "./assets/player-5etZ0P91.js",
-  "./assets/PlaylistView-BiA8EaoX.js",
-  "./assets/QueuePanel-BBn5TqV8.js",
+  "./assets/player-CjF-aWHw.js",
+  "./assets/PlaylistView-B9h47UXX.js",
   "./assets/QueuePanel-BMRmnZOL.css",
-  "./assets/Search-Bb_w47Z4.js",
+  "./assets/QueuePanel-T-tZ89qP.js",
+  "./assets/Search-C-Cy9p1a.js",
   "./assets/Upload-BB6a7-hC.js"
 ]
 

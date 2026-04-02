@@ -335,32 +335,120 @@ export const usePlayerStore = defineStore('player', {
     async _autoPlayNext() {
       if (!this.currentSong) return
 
-      // Try online autoplay first, fall back to local songs
-      try {
-        await this._autoPlayRelated()
-      } catch {
-        await this._autoPlayLocal()
+      // Mix: 60% chance YouTube related, 40% chance local library
+      // If online fails, always try local
+      const tryOnlineFirst = Math.random() < 0.6
+
+      if (tryOnlineFirst) {
+        try {
+          await this._autoPlayRelated()
+          return
+        } catch {}
       }
+
+      // Try local songs
+      const playedLocal = await this._autoPlayLocal()
+      if (playedLocal) return
+
+      // If local failed and didn't try online yet, try online
+      if (!tryOnlineFirst) {
+        try {
+          await this._autoPlayRelated()
+          return
+        } catch {}
+      }
+
+      // Last resort: search for popular music
+      try {
+        await this._autoPlayRadio()
+      } catch {}
     },
 
     async _autoPlayLocal() {
-      // Play a random local song from IndexedDB
       try {
         const { getAllSongs } = await import('../utils/db')
         const songs = await getAllSongs()
-        if (songs.length === 0) return
+        if (songs.length === 0) return false
 
-        // Filter out current song
-        const others = songs.filter(s => s.id !== this.currentSong?.id)
-        if (others.length === 0) return
+        // Filter out recently played (last 5)
+        const recentIds = this._recentAutoplay || []
+        let candidates = songs.filter(s => s.id !== this.currentSong?.id && !recentIds.includes(s.id))
+        if (candidates.length === 0) {
+          // Reset history if all played
+          this._recentAutoplay = []
+          candidates = songs.filter(s => s.id !== this.currentSong?.id)
+        }
+        if (candidates.length === 0) return false
 
-        // Pick random
-        const pick = others[Math.floor(Math.random() * others.length)]
-        pick.album = pick.album || 'Shuffle'
-        await this.playSong(pick, others, others.indexOf(pick))
-      } catch (err) {
-        console.error('Local autoplay failed:', err)
+        const pick = candidates[Math.floor(Math.random() * candidates.length)]
+
+        // Track recently played to avoid repeats
+        if (!this._recentAutoplay) this._recentAutoplay = []
+        this._recentAutoplay.push(pick.id)
+        if (this._recentAutoplay.length > 10) this._recentAutoplay.shift()
+
+        await this.playSong(pick)
+        return true
+      } catch {
+        return false
       }
+    },
+
+    async _autoPlayRadio() {
+      // Search for popular music when no local songs and related fails
+      const genres = ['OPM hits', 'RnB songs', 'trending pop songs', 'acoustic love songs', 'hip hop hits']
+      const query = genres[Math.floor(Math.random() * genres.length)]
+
+      try {
+        const { api: apiFn } = await import('../utils/api')
+        const res = await apiFn(`/bars/api/yt-search.php?q=${encodeURIComponent(query)}`)
+        const data = await res.json()
+        const results = data.results || []
+        if (results.length === 0) return
+
+        const pick = results[Math.floor(Math.random() * results.length)]
+
+        // Get stream URL
+        const streamRes = await apiFn(`/bars/api/yt-stream.php?id=${pick.videoId}`)
+        const streamData = await streamRes.json()
+        if (!streamData.success) return
+
+        this.stop()
+        const song = {
+          id: `yt_${pick.videoId}`,
+          title: pick.title,
+          artist: pick.author,
+          album: 'Radio',
+          cover: pick.thumbnail
+        }
+
+        this.currentSong = song
+        this.queue = []
+        this.queueIndex = -1
+
+        this.howl = new Howl({
+          src: [streamData.url],
+          html5: true,
+          volume: this.isMuted ? 0 : this.volume,
+          onplay: () => { this.isPlaying = true; this.duration = this.howl.duration(); this._startProgress() },
+          onpause: () => { this.isPlaying = false; this._stopProgress() },
+          onstop: () => { this.isPlaying = false; this._stopProgress() },
+          onend: () => { this._stopProgress(); this._autoPlayNext() },
+          onloaderror: () => { this._autoPlayNext() },
+          onplayerror: () => { this._autoPlayNext() }
+        })
+        this.howl.play()
+
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: song.title, artist: song.artist, album: 'Radio',
+            artwork: song.cover ? [{ src: song.cover, sizes: '512x512', type: 'image/jpeg' }] : []
+          })
+        }
+
+        // Auto-download in background
+        autoDownload(pick.videoId, pick.title, pick.author, pick.thumbnail)
+      } catch {}
     },
 
     async _autoPlayRelated() {
