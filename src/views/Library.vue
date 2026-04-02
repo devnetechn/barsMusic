@@ -189,7 +189,8 @@ async function handleDeleteFromContext() {
 async function confirmDelete(song) {
   if (confirm(`Delete "${song.title}"?`)) {
     await deleteSong(song.id)
-    songs.value = await getAllSongs()
+    // Remove only the deleted song from the list
+    songs.value = songs.value.filter(s => s.id !== song.id)
   }
 }
 
