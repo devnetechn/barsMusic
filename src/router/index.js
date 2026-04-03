@@ -10,7 +10,8 @@ const routes = [
       { path: 'library', name: 'library', component: () => import('../views/Library.vue') },
       { path: 'upload', name: 'upload', component: () => import('../views/Upload.vue') },
       { path: 'playlist/:id', name: 'playlist', component: () => import('../views/PlaylistView.vue') },
-      { path: 'liked-songs', name: 'liked-songs', component: () => import('../views/LikedSongs.vue') }
+      { path: 'liked-songs', name: 'liked-songs', component: () => import('../views/LikedSongs.vue') },
+      { path: 'artist/:name', name: 'artist', component: () => import('../views/ArtistView.vue') }
     ]
   }
 ]

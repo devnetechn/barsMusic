@@ -61,6 +61,25 @@
       </div>
     </div>
 
+    <!-- Artists -->
+    <div v-if="artists.length" class="mb-4">
+      <h2 class="text-sm font-semibold text-spotify-light uppercase tracking-wider mb-2 px-1">Artists</h2>
+      <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+        <router-link v-for="a in artists" :key="a.artist"
+          :to="`/artist/${encodeURIComponent(a.artist)}`"
+          class="flex-shrink-0 w-20 text-center">
+          <div class="w-20 h-20 rounded-full bg-spotify-card mx-auto mb-1.5 overflow-hidden shadow">
+            <img v-if="a.cover" :src="a.cover" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <span class="text-2xl font-bold text-spotify-light">{{ a.artist?.charAt(0)?.toUpperCase() }}</span>
+            </div>
+          </div>
+          <p class="text-xs text-white truncate">{{ a.artist }}</p>
+          <p class="text-[10px] text-spotify-light">{{ a.total }} songs</p>
+        </router-link>
+      </div>
+    </div>
+
     <!-- Playlists -->
     <div class="space-y-2">
       <router-link v-for="playlist in playlists" :key="playlist.id"
@@ -167,6 +186,7 @@ const player = usePlayerStore()
 const likes = useLikesStore()
 const songs = ref([])
 const playlists = ref([])
+const artists = ref([])
 const showDownloads = ref(false)
 const showCreatePlaylist = ref(false)
 const newPlaylistName = ref('')
@@ -274,5 +294,12 @@ onMounted(async () => {
   }
 
   await loadPlaylists()
+
+  // Load artists
+  try {
+    const res = await api('/bars/api/artists.php')
+    const data = await res.json()
+    artists.value = data.artists || []
+  } catch {}
 })
 </script>
