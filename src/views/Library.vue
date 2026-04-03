@@ -101,19 +101,23 @@
 
     <!-- Playlists -->
     <div class="space-y-2">
-      <router-link v-for="playlist in playlists" :key="playlist.id"
-        :to="`/playlist/${playlist.id}`"
-        class="flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors block">
-        <div class="w-14 h-14 rounded flex-shrink-0 flex items-center justify-center shadow overflow-hidden"
-          :class="playlist.cover ? '' : 'bg-gradient-to-br from-purple-700 to-blue-900'">
-          <img v-if="playlist.cover" :src="playlist.cover" class="w-full h-full object-cover" />
-          <svg v-else class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-base font-medium text-white truncate">{{ playlist.name }}</p>
-          <p class="text-xs text-spotify-light">Playlist · {{ playlist.total || 0 }} songs</p>
-        </div>
-      </router-link>
+      <div v-for="playlist in playlists" :key="playlist.id" class="flex items-center gap-1">
+        <router-link :to="`/playlist/${playlist.id}`"
+          class="flex-1 flex items-center gap-3 p-3 rounded-lg hover:bg-spotify-card transition-colors">
+          <div class="w-14 h-14 rounded flex-shrink-0 flex items-center justify-center shadow overflow-hidden"
+            :class="playlist.cover ? '' : 'bg-gradient-to-br from-purple-700 to-blue-900'">
+            <img v-if="playlist.cover" :src="playlist.cover" class="w-full h-full object-cover" />
+            <svg v-else class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-base font-medium text-white truncate">{{ playlist.name }}</p>
+            <p class="text-xs text-spotify-light">Playlist · {{ playlist.total || 0 }} songs</p>
+          </div>
+        </router-link>
+        <button @click="deletePlaylist(playlist)" class="p-2 text-spotify-lighter hover:text-red-400 transition-colors flex-shrink-0">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
     </div>
 
     <div v-if="!playlists.length && !songs.length" class="text-center py-16">
@@ -261,6 +265,18 @@ async function confirmDelete(song) {
     // Remove only the deleted song from the list
     songs.value = songs.value.filter(s => s.id !== song.id)
   }
+}
+
+async function deletePlaylist(playlist) {
+  if (!confirm(`Delete "${playlist.name}"?`)) return
+  try {
+    await api('/bars/api/playlists.php', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete_playlist', id: playlist.id })
+    })
+    playlists.value = playlists.value.filter(p => p.id !== playlist.id)
+  } catch {}
 }
 
 async function createPlaylist() {
