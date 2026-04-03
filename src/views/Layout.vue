@@ -130,21 +130,30 @@
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
           <span>Library</span>
         </router-link>
-        <router-link to="/upload" class="flex flex-col items-center gap-1 text-xs"
-          :class="$route.name === 'upload' ? 'text-white' : 'text-spotify-light'">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-          <span>Upload</span>
-        </router-link>
-        <button v-if="auth.isAdmin" @click="showFeedbackPanel = true" class="flex flex-col items-center gap-1 text-xs relative"
-          :class="'text-spotify-light'">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-          <span v-if="unreadCount" class="absolute -top-1 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">{{ unreadCount }}</span>
-          <span>Inbox</span>
-        </button>
-        <button v-else @click="showFeedbackForm = true" class="flex flex-col items-center gap-1 text-xs text-spotify-light">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-          <span>Feedback</span>
-        </button>
+        <!-- Admin: Upload + Inbox -->
+        <template v-if="auth.isAdmin">
+          <router-link to="/upload" class="flex flex-col items-center gap-1 text-xs"
+            :class="$route.name === 'upload' ? 'text-white' : 'text-spotify-light'">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+            <span>Upload</span>
+          </router-link>
+          <button @click="showFeedbackPanel = true" class="flex flex-col items-center gap-1 text-xs relative text-spotify-light">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            <span v-if="unreadCount" class="absolute -top-1 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">{{ unreadCount }}</span>
+            <span>Inbox</span>
+          </button>
+        </template>
+        <!-- User: Feedback + Logout -->
+        <template v-else>
+          <button @click="showFeedbackForm = true" class="flex flex-col items-center gap-1 text-xs text-spotify-light">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            <span>Feedback</span>
+          </button>
+          <button @click="auth.logout()" class="flex flex-col items-center gap-1 text-xs text-red-400">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            <span>Logout</span>
+          </button>
+        </template>
       </div>
     </nav>
 
@@ -160,7 +169,6 @@
             class="flex-1 py-2.5 bg-spotify-green text-black font-semibold text-sm rounded-full disabled:opacity-30">Send</button>
         </div>
         <p v-if="feedbackSent" class="text-spotify-green text-xs text-center mt-2">Sent! Thanks for your feedback.</p>
-        <button @click="auth.logout()" class="mt-4 w-full py-2 text-red-400 text-sm border border-red-400/30 rounded-full">Logout</button>
       </div>
     </div>
 
