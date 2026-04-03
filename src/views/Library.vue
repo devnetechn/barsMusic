@@ -288,43 +288,35 @@ async function loadPlaylists() {
 }
 
 onMounted(async () => {
-  const localSongs = await getAllSongs()
+  // Load everything in parallel — much faster
+  const [localSongs, songsRes, playlistRes, artistRes, albumRes] = await Promise.all([
+    getAllSongs(),
+    api('/bars/api/songs.php').then(r => r.json()).catch(() => ({ songs: [] })),
+    api('/bars/api/playlists.php').then(r => r.json()).catch(() => ({ playlists: [] })),
+    api('/bars/api/artists.php').then(r => r.json()).catch(() => ({ artists: [] })),
+    api('/bars/api/albums.php').then(r => r.json()).catch(() => ({ albums: [] }))
+  ])
 
-  try {
-    const res = await api('/bars/api/songs.php')
-    const data = await res.json()
-    const serverSongs = data.songs || []
-    const localFilenames = new Set(localSongs.map(s => s.filename))
-    songs.value = [
-      ...localSongs,
-      ...serverSongs.filter(s => !localFilenames.has(s.filename)).map(s => ({
-        id: `server_${s.id}`,
-        title: s.title,
-        artist: s.artist || 'Unknown Artist',
-        album: s.album || 'Unknown Album',
-        filename: s.filename,
-        cover: s.cover,
-        size: s.size,
-        url: `/bars/music/${s.filename}`,
-        addedAt: s.created_at
-      }))
-    ]
-  } catch {
-    songs.value = localSongs
-  }
+  // Merge songs
+  const serverSongs = songsRes.songs || []
+  const localFilenames = new Set(localSongs.map(s => s.filename))
+  songs.value = [
+    ...localSongs,
+    ...serverSongs.filter(s => !localFilenames.has(s.filename)).map(s => ({
+      id: `server_${s.id}`,
+      title: s.title,
+      artist: s.artist || 'Unknown Artist',
+      album: s.album || 'Unknown Album',
+      filename: s.filename,
+      cover: s.cover,
+      size: s.size,
+      url: `/bars/music/${s.filename}`,
+      addedAt: s.created_at
+    }))
+  ]
 
-  await loadPlaylists()
-
-  // Load artists and albums
-  try {
-    const [artistRes, albumRes] = await Promise.all([
-      api('/bars/api/artists.php'),
-      api('/bars/api/albums.php')
-    ])
-    const artistData = await artistRes.json()
-    const albumData = await albumRes.json()
-    artists.value = artistData.artists || []
-    albums.value = albumData.albums || []
-  } catch {}
+  playlists.value = playlistRes.playlists || []
+  artists.value = artistRes.artists || []
+  albums.value = albumRes.albums || []
 })
 </script>
