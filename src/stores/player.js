@@ -220,7 +220,18 @@ export const usePlayerStore = defineStore('player', {
 
     resume() {
       if (this.howl && !this.isPlaying) {
+        // Save position before play (in case it resets)
+        const pos = this.currentTime
         this.howl.play()
+        // If position reset, seek back
+        if (pos > 1) {
+          setTimeout(() => {
+            const newPos = this.howl.seek()
+            if (typeof newPos === 'number' && newPos < pos - 2) {
+              this.howl.seek(pos)
+            }
+          }, 100)
+        }
       }
     },
 
