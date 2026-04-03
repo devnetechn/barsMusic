@@ -13,11 +13,17 @@ ini_set('session.cookie_samesite', $isSecure ? 'None' : 'Lax');
 ini_set('session.cookie_secure', $isSecure ? 1 : 0);
 session_start();
 
-// CORS
+// CORS - allow local + tunnel origins
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin) {
+$allowed = ['http://localhost', 'http://127.0.0.1', 'http://localhost:5173', 'http://localhost:8080'];
+// Also allow any 192.168.x.x and trycloudflare.com
+$isAllowed = in_array($origin, $allowed)
+    || preg_match('/^https?:\/\/192\.168\./', $origin)
+    || preg_match('/\.trycloudflare\.com$/', parse_url($origin, PHP_URL_HOST) ?? '');
+if ($isAllowed && $origin) {
     header('Access-Control-Allow-Origin: ' . $origin);
-} else {
+} elseif (!$origin) {
+    // Same-origin requests (no Origin header)
     header('Access-Control-Allow-Origin: *');
 }
 header('Access-Control-Allow-Credentials: true');
@@ -118,12 +124,12 @@ function getCurrentUser() {
     ];
 }
 
-// Create admin if not exists
+// Create admin only if no users exist at all (first run only)
 function ensureAdmin() {
     $db = getDB();
-    $stmt = $db->prepare('SELECT id FROM users WHERE username = ?');
-    $stmt->execute(['bars']);
-    if (!$stmt->fetch()) {
+    $stmt = $db->query('SELECT COUNT(*) as c FROM users');
+    $row = $stmt->fetch();
+    if ($row['c'] == 0) {
         $stmt = $db->prepare('INSERT INTO users (username, password, display_name, role) VALUES (?, ?, ?, ?)');
         $stmt->execute(['bars', password_hash('admin123', PASSWORD_DEFAULT), "Bar's", 'admin']);
     }

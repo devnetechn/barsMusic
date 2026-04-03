@@ -11,7 +11,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// POST - login
+// POST - login with rate limiting
+// Simple rate limit: max 10 attempts per minute per IP
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$rateLimitFile = sys_get_temp_dir() . '/bars_login_' . md5($ip);
+$attempts = 0;
+if (file_exists($rateLimitFile)) {
+    $data = json_decode(file_get_contents($rateLimitFile), true);
+    if ($data && time() - $data['time'] < 60) {
+        $attempts = $data['count'];
+    }
+}
+if ($attempts >= 10) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Too many login attempts. Try again in 1 minute.']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 $username = trim($input['username'] ?? '');
 $password = $input['password'] ?? '';
@@ -28,6 +44,8 @@ $stmt->execute([strtolower($username)]);
 $user = $stmt->fetch();
 
 if (!$user || !password_verify($password, $user['password'])) {
+    // Track failed attempt
+    file_put_contents($rateLimitFile, json_encode(['count' => $attempts + 1, 'time' => time()]));
     http_response_code(401);
     echo json_encode(['error' => 'Invalid username or password']);
     exit;

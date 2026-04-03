@@ -1,4 +1,4 @@
-const CACHE_NAME = 'muzik-v1775196720064'
+const CACHE_NAME = 'muzik-v1775197149591'
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",

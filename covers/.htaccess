@@ -1,0 +1,4 @@
+# Only allow image files
+<FilesMatch "\.(php|phtml|exe|bat|sh)$">
+    Deny from all
+</FilesMatch>

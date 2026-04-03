@@ -23,9 +23,9 @@ if (strlen($username) < 3) {
     echo json_encode(['error' => 'Username must be at least 3 characters']);
     exit;
 }
-if (strlen($password) < 4) {
+if (strlen($password) < 6) {
     http_response_code(400);
-    echo json_encode(['error' => 'Password must be at least 4 characters']);
+    echo json_encode(['error' => 'Password must be at least 6 characters']);
     exit;
 }
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {

@@ -1,8 +1,7 @@
 <?php
+require_once __DIR__ . '/config.php';
+requireAdmin(); // Admin only
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -10,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
-$filename = $input['filename'] ?? '';
+$filename = basename($input['filename'] ?? '');
 
 if (empty($filename)) {
     http_response_code(400);
@@ -18,7 +17,6 @@ if (empty($filename)) {
     exit;
 }
 
-$filename = basename($filename);
 $filePath = __DIR__ . '/../music/' . $filename;
 
 if (!file_exists($filePath)) {
@@ -28,8 +26,8 @@ if (!file_exists($filePath)) {
 }
 
 if (unlink($filePath)) {
-    echo json_encode(['success' => true, 'message' => 'File deleted']);
+    echo json_encode(['success' => true]);
 } else {
     http_response_code(500);
-    echo json_encode(['error' => 'Failed to delete file']);
+    echo json_encode(['error' => 'Failed to delete']);
 }
