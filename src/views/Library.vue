@@ -304,35 +304,40 @@ async function loadPlaylists() {
 }
 
 onMounted(async () => {
-  // Load everything in parallel — much faster
-  const [localSongs, songsRes, playlistRes, artistRes, albumRes] = await Promise.all([
-    getAllSongs(),
+  // Load server data first (fast), IndexedDB in background (slow)
+  const [songsRes, playlistRes, artistRes, albumRes] = await Promise.all([
     api('/bars/api/songs.php').then(r => r.json()).catch(() => ({ songs: [] })),
     api('/bars/api/playlists.php').then(r => r.json()).catch(() => ({ playlists: [] })),
     api('/bars/api/artists.php').then(r => r.json()).catch(() => ({ artists: [] })),
     api('/bars/api/albums.php').then(r => r.json()).catch(() => ({ albums: [] }))
   ])
 
-  // Merge songs
+  // Show server songs immediately
   const serverSongs = songsRes.songs || []
-  const localFilenames = new Set(localSongs.map(s => s.filename))
-  songs.value = [
-    ...localSongs,
-    ...serverSongs.filter(s => !localFilenames.has(s.filename)).map(s => ({
-      id: `server_${s.id}`,
-      title: s.title,
-      artist: s.artist || 'Unknown Artist',
-      album: s.album || 'Unknown Album',
-      filename: s.filename,
-      cover: s.cover,
-      size: s.size,
-      url: `/bars/music/${s.filename}`,
-      addedAt: s.created_at
-    }))
-  ]
+  songs.value = serverSongs.map(s => ({
+    id: `server_${s.id}`,
+    title: s.title,
+    artist: s.artist || 'Unknown Artist',
+    album: s.album || 'Unknown Album',
+    filename: s.filename,
+    cover: s.cover,
+    size: s.size,
+    url: `/bars/music/${s.filename}`,
+    addedAt: s.created_at
+  }))
 
   playlists.value = playlistRes.playlists || []
   artists.value = artistRes.artists || []
   albums.value = albumRes.albums || []
+
+  // Merge IndexedDB songs in background (won't block UI)
+  getAllSongs().then(localSongs => {
+    if (!localSongs.length) return
+    const serverFilenames = new Set(serverSongs.map(s => s.filename))
+    const newLocal = localSongs.filter(s => !serverFilenames.has(s.filename))
+    if (newLocal.length) {
+      songs.value = [...newLocal, ...songs.value]
+    }
+  }).catch(() => {})
 })
 </script>
