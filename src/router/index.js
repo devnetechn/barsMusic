@@ -11,7 +11,8 @@ const routes = [
       { path: 'upload', name: 'upload', component: () => import('../views/Upload.vue') },
       { path: 'playlist/:id', name: 'playlist', component: () => import('../views/PlaylistView.vue') },
       { path: 'liked-songs', name: 'liked-songs', component: () => import('../views/LikedSongs.vue') },
-      { path: 'artist/:name', name: 'artist', component: () => import('../views/ArtistView.vue') }
+      { path: 'artist/:name', name: 'artist', component: () => import('../views/ArtistView.vue') },
+      { path: 'album/:id', name: 'album', component: () => import('../views/AlbumView.vue') }
     ]
   }
 ]

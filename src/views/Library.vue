@@ -80,6 +80,25 @@
       </div>
     </div>
 
+    <!-- Albums -->
+    <div v-if="albums.length" class="mb-4">
+      <h2 class="text-sm font-semibold text-spotify-light uppercase tracking-wider mb-2 px-1">Albums</h2>
+      <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+        <router-link v-for="a in albums" :key="a.id"
+          :to="`/album/${a.id}`"
+          class="flex-shrink-0 w-28">
+          <div class="w-28 h-28 bg-spotify-card rounded-lg mx-auto mb-1.5 overflow-hidden shadow">
+            <img v-if="a.cover" :src="a.cover" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <svg class="w-10 h-10 text-spotify-light" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5z"/></svg>
+            </div>
+          </div>
+          <p class="text-xs font-semibold text-white truncate">{{ a.name }}</p>
+          <p class="text-[10px] text-spotify-light truncate">{{ a.artist }}</p>
+        </router-link>
+      </div>
+    </div>
+
     <!-- Playlists -->
     <div class="space-y-2">
       <router-link v-for="playlist in playlists" :key="playlist.id"
@@ -187,6 +206,7 @@ const likes = useLikesStore()
 const songs = ref([])
 const playlists = ref([])
 const artists = ref([])
+const albums = ref([])
 const showDownloads = ref(false)
 const showCreatePlaylist = ref(false)
 const newPlaylistName = ref('')
@@ -295,11 +315,16 @@ onMounted(async () => {
 
   await loadPlaylists()
 
-  // Load artists
+  // Load artists and albums
   try {
-    const res = await api('/bars/api/artists.php')
-    const data = await res.json()
-    artists.value = data.artists || []
+    const [artistRes, albumRes] = await Promise.all([
+      api('/bars/api/artists.php'),
+      api('/bars/api/albums.php')
+    ])
+    const artistData = await artistRes.json()
+    const albumData = await albumRes.json()
+    artists.value = artistData.artists || []
+    albums.value = albumData.albums || []
   } catch {}
 })
 </script>

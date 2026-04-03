@@ -121,9 +121,27 @@ if ($cover && strpos($cover, 'http') === 0) {
     }
 }
 
+// Auto-create album for artist
+$albumName = $artist . ' Collection';
+$albumId = null;
+if ($artist && $artist !== 'Unknown Artist') {
+    $stmt = $db->prepare('INSERT IGNORE INTO albums (name, artist, cover) VALUES (?, ?, ?)');
+    $stmt->execute([$albumName, $artist, $localCover]);
+    $stmt = $db->prepare('SELECT id FROM albums WHERE name = ? AND artist = ?');
+    $stmt->execute([$albumName, $artist]);
+    $row = $stmt->fetch();
+    $albumId = $row ? $row['id'] : null;
+
+    // Update album cover if better one available
+    if ($albumId && $localCover) {
+        $stmt = $db->prepare('UPDATE albums SET cover = ? WHERE id = ? AND (cover IS NULL OR cover = "")');
+        $stmt->execute([$localCover, $albumId]);
+    }
+}
+
 // Save to user's library in DB
-$stmt = $db->prepare('INSERT INTO songs (user_id, title, artist, album, filename, cover, size, source, video_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-$stmt->execute([$userId, $title, $artist, 'YouTube', $outputFile, $localCover, $fileSize, 'youtube', $videoId]);
+$stmt = $db->prepare('INSERT INTO songs (user_id, title, artist, album, album_id, filename, cover, size, source, video_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$stmt->execute([$userId, $title, $artist, $albumName, $albumId, $outputFile, $localCover, $fileSize, 'youtube', $videoId]);
 
 echo json_encode([
     'success' => true,
