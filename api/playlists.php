@@ -135,6 +135,23 @@ if ($method === 'POST') {
         $duration = $input['duration'] ?? '';
         $filename = $input['filename'] ?? null;
 
+        // Validate song_id is a real positive integer (not 0, not string like "server_42")
+        if ($songId !== null) {
+            $songId = intval($songId);
+            if ($songId <= 0) $songId = null;
+        }
+
+        // Try to resolve song_id from title if not valid
+        if (!$songId && $title) {
+            $stmt = $db->prepare('SELECT id, filename FROM songs WHERE title = ? LIMIT 1');
+            $stmt->execute([$title]);
+            $row = $stmt->fetch();
+            if ($row) {
+                $songId = $row['id'];
+                if (!$filename) $filename = $row['filename'];
+            }
+        }
+
         // Try to resolve song_id from filename if not provided
         if (!$songId && $filename) {
             $stmt = $db->prepare('SELECT id FROM songs WHERE filename = ? LIMIT 1');
