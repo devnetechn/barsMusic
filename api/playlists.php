@@ -133,6 +133,22 @@ if ($method === 'POST') {
         $artist = $input['artist'] ?? '';
         $cover = $input['cover'] ?? null;
         $duration = $input['duration'] ?? '';
+        $filename = $input['filename'] ?? null;
+
+        // Try to resolve song_id from filename if not provided
+        if (!$songId && $filename) {
+            $stmt = $db->prepare('SELECT id FROM songs WHERE filename = ? LIMIT 1');
+            $stmt->execute([$filename]);
+            $row = $stmt->fetch();
+            if ($row) $songId = $row['id'];
+        }
+        // Also try from video_id
+        if (!$songId && $videoId) {
+            $stmt = $db->prepare('SELECT id FROM songs WHERE video_id = ? LIMIT 1');
+            $stmt->execute([$videoId]);
+            $row = $stmt->fetch();
+            if ($row) $songId = $row['id'];
+        }
 
         // Verify playlist belongs to user
         $stmt = $db->prepare('SELECT id FROM playlists WHERE id = ? AND user_id = ?');

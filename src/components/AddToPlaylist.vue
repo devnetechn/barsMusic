@@ -204,18 +204,27 @@ async function addSongToPlaylist(playlistId) {
   if (s) {
     // Adding a specific song (from search/context menu)
     try {
+      // Extract real numeric song_id from prefixed IDs like "server_42"
+      let realSongId = s.id || null
+      if (typeof realSongId === 'string' && realSongId.startsWith('server_')) {
+        realSongId = parseInt(realSongId.replace('server_', ''))
+      } else if (typeof realSongId === 'string' && realSongId.startsWith('yt_')) {
+        realSongId = null // YouTube songs don't have a server song_id
+      }
+
       await api('/bars/api/playlists.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'add_item',
           playlist_id: playlistId,
-          song_id: s.id || null,
+          song_id: realSongId,
           video_id: s.videoId || s.video_id || null,
           title: s.title || '',
           artist: s.artist || s.author || '',
           cover: s.cover || s.thumbnail || null,
-          duration: s.duration || ''
+          duration: s.duration || '',
+          filename: s.filename || null
         })
       })
       addedMessage.value = 'Added to playlist!'
@@ -239,17 +248,25 @@ async function addLibrarySong(song) {
   if (!plId) return
 
   try {
+    let realId = song.id || null
+    if (typeof realId === 'string' && realId.startsWith('server_')) {
+      realId = parseInt(realId.replace('server_', ''))
+    } else if (typeof realId === 'string' && realId.startsWith('yt_')) {
+      realId = null
+    }
+
     await api('/bars/api/playlists.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'add_item',
         playlist_id: plId,
-        song_id: song.id || null,
+        song_id: realId,
         title: song.title || '',
         artist: song.artist || '',
         cover: song.cover || null,
-        duration: song.duration || ''
+        duration: song.duration || '',
+        filename: song.filename || null
       })
     })
     addedSongs.value = new Set([...addedSongs.value, key])
