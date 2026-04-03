@@ -135,12 +135,57 @@
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
           <span>Upload</span>
         </router-link>
-        <button @click="auth.logout()" class="flex flex-col items-center gap-1 text-xs text-red-400">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-          <span>Logout</span>
+        <button v-if="auth.isAdmin" @click="showFeedbackPanel = true" class="flex flex-col items-center gap-1 text-xs relative"
+          :class="'text-spotify-light'">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <span v-if="unreadCount" class="absolute -top-1 right-0 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">{{ unreadCount }}</span>
+          <span>Inbox</span>
+        </button>
+        <button v-else @click="showFeedbackForm = true" class="flex flex-col items-center gap-1 text-xs text-spotify-light">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+          <span>Feedback</span>
         </button>
       </div>
     </nav>
+
+    <!-- User Feedback Form -->
+    <div v-if="showFeedbackForm" class="fixed inset-0 bg-black/60 z-[95] flex items-end justify-center" @click.self="showFeedbackForm = false">
+      <div class="bg-spotify-card rounded-t-2xl w-full max-w-lg p-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)">
+        <h2 class="text-lg font-bold text-white mb-3">Send Feedback</h2>
+        <textarea v-model="feedbackMsg" rows="3" placeholder="Report a bug or suggest a feature..."
+          class="w-full bg-spotify-lighter/20 text-white px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-spotify-green placeholder-spotify-lighter resize-none"></textarea>
+        <div class="flex gap-3 mt-3">
+          <button @click="showFeedbackForm = false" class="flex-1 py-2.5 text-spotify-light text-sm">Cancel</button>
+          <button @click="submitFeedback" :disabled="!feedbackMsg.trim()"
+            class="flex-1 py-2.5 bg-spotify-green text-black font-semibold text-sm rounded-full disabled:opacity-30">Send</button>
+        </div>
+        <p v-if="feedbackSent" class="text-spotify-green text-xs text-center mt-2">Sent! Thanks for your feedback.</p>
+      </div>
+    </div>
+
+    <!-- Admin Feedback Panel -->
+    <div v-if="showFeedbackPanel" class="fixed inset-0 bg-black/60 z-[95] flex items-end justify-center" @click.self="showFeedbackPanel = false">
+      <div class="bg-spotify-dark rounded-t-2xl w-full max-w-lg max-h-[70vh] flex flex-col" style="padding-bottom: env(safe-area-inset-bottom)">
+        <div class="flex items-center justify-between p-4 border-b border-spotify-lighter/20 flex-shrink-0">
+          <h2 class="text-lg font-bold text-white">Feedback ({{ unreadCount }} new)</h2>
+          <button v-if="unreadCount" @click="markAllRead" class="text-xs text-spotify-green">Mark all read</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div v-for="fb in feedbackList" :key="fb.id"
+            class="p-3 rounded-lg" :class="fb.is_read ? 'bg-spotify-card/50' : 'bg-spotify-card border-l-2 border-spotify-green'">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-semibold text-white">{{ fb.username }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-spotify-lighter">{{ timeAgo(fb.created_at) }}</span>
+                <button @click="deleteFeedback(fb)" class="text-spotify-lighter hover:text-red-400"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+              </div>
+            </div>
+            <p class="text-sm text-spotify-light">{{ fb.message }}</p>
+          </div>
+          <p v-if="!feedbackList.length" class="text-center text-spotify-light py-8">No feedback yet</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -156,6 +201,74 @@ import NavBar from '../components/NavBar.vue'
 const playerStore = usePlayerStore()
 const auth = useAuthStore()
 const likesStore = useLikesStore()
+
+// Feedback
+const showFeedbackForm = ref(false)
+const showFeedbackPanel = ref(false)
+const feedbackMsg = ref('')
+const feedbackSent = ref(false)
+const feedbackList = ref([])
+const unreadCount = ref(0)
+
+async function submitFeedback() {
+  if (!feedbackMsg.value.trim()) return
+  try {
+    const { api } = await import('../utils/api')
+    await api('/bars/api/feedback.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', message: feedbackMsg.value.trim() })
+    })
+    feedbackMsg.value = ''
+    feedbackSent.value = true
+    setTimeout(() => { feedbackSent.value = false; showFeedbackForm.value = false }, 1500)
+  } catch {}
+}
+
+async function loadFeedback() {
+  if (!auth.isAdmin) return
+  try {
+    const { api } = await import('../utils/api')
+    const res = await api('/bars/api/feedback.php')
+    const data = await res.json()
+    feedbackList.value = data.feedback || []
+    unreadCount.value = data.unread || 0
+  } catch {}
+}
+
+async function markAllRead() {
+  try {
+    const { api } = await import('../utils/api')
+    await api('/bars/api/feedback.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'read', id: 'all' })
+    })
+    feedbackList.value.forEach(f => f.is_read = 1)
+    unreadCount.value = 0
+  } catch {}
+}
+
+async function deleteFeedback(fb) {
+  try {
+    const { api } = await import('../utils/api')
+    await api('/bars/api/feedback.php', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: fb.id })
+    })
+    feedbackList.value = feedbackList.value.filter(f => f.id !== fb.id)
+    if (!fb.is_read) unreadCount.value--
+  } catch {}
+}
+
+function timeAgo(date) {
+  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  if (s < 60) return 'now'
+  if (s < 3600) return Math.floor(s / 60) + 'm'
+  if (s < 86400) return Math.floor(s / 3600) + 'h'
+  return Math.floor(s / 86400) + 'd'
+}
 
 // Extra bottom padding for main content so it doesn't hide behind player + nav
 const mainPadding = computed(() => {
@@ -211,6 +324,9 @@ onMounted(async () => {
   await auth.checkAuth()
   if (auth.authenticated) {
     likesStore.loadLikedSongs()
+    loadFeedback()
+    // Check for new feedback every 30 seconds (admin)
+    setInterval(loadFeedback, 30000)
   }
 })
 </script>
