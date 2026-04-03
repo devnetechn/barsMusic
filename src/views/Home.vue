@@ -64,38 +64,33 @@
     </section>
 
     <!-- 5. Your Artists -->
-    <section v-if="yourArtists.length" class="mb-8">
-      <h2 class="text-xl font-bold text-white mb-4">Your Artists</h2>
-      <div class="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+    <section v-if="yourArtists.length" class="mb-6">
+      <h2 class="text-lg font-bold text-white mb-3">Your Artists</h2>
+      <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
         <router-link v-for="a in yourArtists" :key="a.artist"
           :to="`/artist/${encodeURIComponent(a.artist)}`"
-          class="flex-shrink-0 w-28 text-center group">
-          <div class="w-28 h-28 rounded-full bg-spotify-card mx-auto mb-2 overflow-hidden shadow-lg group-hover:shadow-spotify-green/20 transition-shadow">
+          class="flex-shrink-0 w-20 text-center">
+          <div class="w-20 h-20 rounded-full bg-spotify-card mx-auto mb-1.5 overflow-hidden shadow">
             <img v-if="a.cover" :src="a.cover" class="w-full h-full object-cover" />
             <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-spotify-card to-spotify-lighter">
-              <span class="text-3xl font-bold text-spotify-light">{{ a.artist?.charAt(0)?.toUpperCase() }}</span>
+              <span class="text-xl font-bold text-spotify-light">{{ a.artist?.charAt(0)?.toUpperCase() }}</span>
             </div>
           </div>
-          <p class="text-sm font-semibold text-white truncate">{{ a.artist }}</p>
-          <p class="text-[10px] text-spotify-light">{{ a.total }} songs</p>
+          <p class="text-[11px] font-semibold text-white truncate">{{ a.artist }}</p>
         </router-link>
       </div>
     </section>
 
     <!-- 6. Radio Stations -->
-    <section class="mb-8">
-      <h2 class="text-xl font-bold text-white mb-4">Radio</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <section class="mb-6">
+      <h2 class="text-lg font-bold text-white mb-3">Radio</h2>
+      <div class="grid grid-cols-3 gap-2">
         <div v-for="station in radioStations" :key="station.name"
           @click="playRadio(station)"
-          class="rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-transform bg-gradient-to-br shadow-lg"
+          class="rounded-lg p-2.5 cursor-pointer active:scale-95 transition-transform bg-gradient-to-br"
           :class="station.color">
-          <div class="flex items-center gap-2 mb-2">
-            <svg class="w-5 h-5 text-white/90" fill="currentColor" viewBox="0 0 24 24"><path d="M3.24 6.15C2.51 6.43 2 7.17 2 8v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H8.3l8.26-3.34L15.88 1 3.24 6.15zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-8h-2v-2h-2v2H4V8h16v4z"/></svg>
-            <span class="text-white/80 text-[10px] font-bold uppercase tracking-wider">Radio</span>
-          </div>
-          <p class="text-white font-bold text-lg">{{ station.name }}</p>
-          <p class="text-white/60 text-xs mt-0.5">{{ station.desc }}</p>
+          <p class="text-white font-bold text-xs">{{ station.name }}</p>
+          <p class="text-white/50 text-[10px] mt-0.5">{{ station.desc }}</p>
         </div>
       </div>
     </section>
