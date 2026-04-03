@@ -10,15 +10,16 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/bars/api': {
-        target: 'http://localhost',
-        changeOrigin: true
+        target: 'http://127.0.0.1',
+        changeOrigin: true,
+        timeout: 120000
       },
       '/bars/music': {
-        target: 'http://localhost',
+        target: 'http://127.0.0.1',
         changeOrigin: true
       },
       '/bars/covers': {
-        target: 'http://localhost',
+        target: 'http://127.0.0.1',
         changeOrigin: true
       }
     }
