@@ -282,12 +282,12 @@ const topMixes = ref([])
 const yourArtists = ref([])
 
 const radioStations = [
-  { name: 'OPM Hits', desc: 'Filipino music', color: 'from-green-600 to-green-900', query: 'OPM hits songs' },
-  { name: 'R&B Soul', desc: 'Smooth vibes', color: 'from-blue-500 to-blue-900', query: 'RnB soul music' },
-  { name: 'Pop Hits', desc: 'Top charts', color: 'from-pink-500 to-purple-700', query: 'popular pop songs 2025' },
-  { name: 'Hip Hop', desc: 'Rap & beats', color: 'from-orange-500 to-red-700', query: 'hip hop rap songs' },
-  { name: 'Acoustic', desc: 'Chill acoustic', color: 'from-yellow-600 to-amber-900', query: 'acoustic chill songs' },
-  { name: 'Love Songs', desc: 'Romance', color: 'from-rose-500 to-pink-900', query: 'love songs romantic' },
+  { name: 'OPM', desc: 'Filipino hits', color: 'from-green-600 to-green-900', query: 'SunKissed Lola Pasilyo Ben&Ben' },
+  { name: 'R&B', desc: 'Smooth vibes', color: 'from-blue-500 to-blue-900', query: 'Ella Mai Boo\'d Up SZA lyrics' },
+  { name: 'Pop', desc: 'Top charts', color: 'from-pink-500 to-purple-700', query: 'Sabrina Carpenter Espresso Taylor Swift' },
+  { name: 'Hip Hop', desc: 'Rap & beats', color: 'from-orange-500 to-red-700', query: 'Eminem Kendrick Lamar lyrics' },
+  { name: 'Acoustic', desc: 'Chill vibes', color: 'from-yellow-600 to-amber-900', query: 'acoustic cover popular songs lyrics' },
+  { name: 'Love', desc: 'Romance', color: 'from-rose-500 to-pink-900', query: 'love songs Ed Sheeran Bruno Mars' },
 ]
 
 async function playRadio(station) {
@@ -330,7 +330,9 @@ async function playRadio(station) {
 
     player.playSong(song, queue, 0)
     autoDownload(pick.videoId, pick.title, pick.author, pick.thumbnail)
-  } catch {}
+  } catch (err) {
+    console.error('Radio failed:', err)
+  }
 }
 
 const mixColors = [
