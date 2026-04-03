@@ -160,6 +160,7 @@
             class="flex-1 py-2.5 bg-spotify-green text-black font-semibold text-sm rounded-full disabled:opacity-30">Send</button>
         </div>
         <p v-if="feedbackSent" class="text-spotify-green text-xs text-center mt-2">Sent! Thanks for your feedback.</p>
+        <button @click="auth.logout()" class="mt-4 w-full py-2 text-red-400 text-sm border border-red-400/30 rounded-full">Logout</button>
       </div>
     </div>
 
@@ -183,6 +184,9 @@
             <p class="text-sm text-spotify-light">{{ fb.message }}</p>
           </div>
           <p v-if="!feedbackList.length" class="text-center text-spotify-light py-8">No feedback yet</p>
+        </div>
+        <div class="p-4 border-t border-spotify-lighter/20 flex-shrink-0">
+          <button @click="auth.logout()" class="w-full py-2 text-red-400 text-sm border border-red-400/30 rounded-full">Logout</button>
         </div>
       </div>
     </div>
