@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { Howl } from 'howler'
 import { getAudioBlob } from '../utils/db'
-import { autoDownload } from '../utils/api'
+import { autoDownload, musicUrl } from '../utils/api'
 
 export const usePlayerStore = defineStore('player', {
   state: () => ({
@@ -97,7 +97,7 @@ export const usePlayerStore = defineStore('player', {
       if (!url) {
         if (song.filename) {
           // Has filename = on server
-          url = `/bars/music/${song.filename}`
+          url = musicUrl(`/bars/music/${song.filename}`)
         } else if (song.url) {
           // Has URL (stream or direct link)
           url = song.url
@@ -682,7 +682,7 @@ export const usePlayerStore = defineStore('player', {
           nextSong._preloadedUrl = URL.createObjectURL(blob)
         } else if (nextSong.url || nextSong.filename) {
           // Pre-fetch the audio to browser cache
-          const url = nextSong.url || `/bars/music/${nextSong.filename}`
+          const url = nextSong.url || musicUrl(`/bars/music/${nextSong.filename}`)
           fetch(url, { mode: 'no-cors' }).catch(() => {})
           nextSong._preloadedUrl = url
         }
@@ -741,7 +741,7 @@ export const usePlayerStore = defineStore('player', {
               if (blob) {
                 song = { ...pick, url: URL.createObjectURL(blob) }
               } else if (pick.url || pick.filename) {
-                song = { ...pick, url: pick.url || `/bars/music/${pick.filename}` }
+                song = { ...pick, url: pick.url || musicUrl(`/bars/music/${pick.filename}`) }
               }
             }
           } catch {}

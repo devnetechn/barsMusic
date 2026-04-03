@@ -1,4 +1,5 @@
 import { saveSong, getAudioBlob } from './db'
+import { API_BASE, ASSET_BASE } from '../config'
 
 // Auto-download queue - one at a time to avoid bandwidth issues
 const _downloadQueue = []
@@ -62,11 +63,22 @@ async function _processDownloadQueue() {
   _isDownloading = false
 }
 
-// Fetch a music file - tries proxy path first, falls back to direct path
+// Build full music URL (prepends server base on native)
+export function musicUrl(path) {
+  return ASSET_BASE + path
+}
+
+// Build full cover URL (prepends server base on native)
+export function coverUrl(path) {
+  return ASSET_BASE + path
+}
+
+// Fetch a music file - uses ASSET_BASE for native, proxy for web
 export async function fetchMusic(serverUrl) {
-  // serverUrl is like /bars/music/filename.mp3
-  let res = await fetch(serverUrl)
-  if (!res.ok) {
+  // Prepend ASSET_BASE if not already a full URL
+  const fullUrl = serverUrl.startsWith('http') ? serverUrl : ASSET_BASE + serverUrl
+  let res = await fetch(fullUrl)
+  if (!res.ok && !ASSET_BASE) {
     // Fallback: try direct path (for Vite dev server serving static files)
     const directPath = serverUrl.replace('/bars/music/', '/music/')
     res = await fetch(directPath)
@@ -76,8 +88,12 @@ export async function fetchMusic(serverUrl) {
 }
 
 // Wrapper around fetch that always includes credentials + auth token
+// Automatically prepends API_BASE for native Capacitor builds
 export async function api(url, options = {}) {
   const token = localStorage.getItem('bars_token')
+
+  // Prepend API_BASE if not already a full URL
+  const fullUrl = url.startsWith('http') ? url : API_BASE + url
 
   // Merge headers with auth token
   const headers = { ...(options.headers || {}) }
@@ -85,7 +101,7 @@ export async function api(url, options = {}) {
     headers['X-Auth-Token'] = token
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(fullUrl, {
     ...options,
     headers,
     credentials: 'include'

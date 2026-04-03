@@ -266,7 +266,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getAllSongs, saveSong, searchSongs } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
-import { api, fetchMusic, autoDownload } from '../utils/api'
+import { api, fetchMusic, autoDownload, musicUrl } from '../utils/api'
 import { Howl } from 'howler'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
 
@@ -603,7 +603,7 @@ onMounted(async () => {
         filename: s.filename,
         cover: s.cover,
         size: s.size,
-        url: `/bars/music/${s.filename}`,
+        url: musicUrl(`/bars/music/${s.filename}`),
         addedAt: s.created_at
       }))
     ]
@@ -625,7 +625,7 @@ onMounted(async () => {
         filename: s.filename,
         cover: s.cover,
         size: s.size,
-        url: `/bars/music/${s.filename}`,
+        url: musicUrl(`/bars/music/${s.filename}`),
         addedAt: s.created_at
       }))
     ]

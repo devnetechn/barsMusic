@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { api } from '../utils/api'
+import { API_BASE } from '../config'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -19,7 +20,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const token = localStorage.getItem('bars_token')
         const headers = token ? { 'X-Auth-Token': token } : {}
-        const res = await fetch('/bars/api/login.php', {
+        const res = await fetch(API_BASE + '/bars/api/login.php', {
           credentials: 'include',
           headers,
           // Bypass service worker to avoid interference with auth
@@ -53,7 +54,7 @@ export const useAuthStore = defineStore('auth', {
 
     async login(username, password) {
       try {
-        const res = await fetch('/bars/api/login.php', {
+        const res = await fetch(API_BASE + '/bars/api/login.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -75,7 +76,7 @@ export const useAuthStore = defineStore('auth', {
 
     async register(username, password, displayName) {
       try {
-        const res = await fetch('/bars/api/register.php', {
+        const res = await fetch(API_BASE + '/bars/api/register.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -99,7 +100,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const token = localStorage.getItem('bars_token')
         const headers = token ? { 'X-Auth-Token': token } : {}
-        await fetch('/bars/api/logout.php', { credentials: 'include', headers })
+        await fetch(API_BASE + '/bars/api/logout.php', { credentials: 'include', headers })
       } catch { /* ignore */ }
       this.authenticated = false
       this.user = null

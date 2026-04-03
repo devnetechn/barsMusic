@@ -54,7 +54,7 @@
 <script setup>
 import { usePlayerStore } from '../stores/player'
 import { useLikesStore } from '../stores/likes'
-import { api } from '../utils/api'
+import { api, musicUrl } from '../utils/api'
 import LikeButton from '../components/LikeButton.vue'
 
 const player = usePlayerStore()
@@ -72,7 +72,7 @@ async function buildSongObj(song) {
 
   // 1. Has filename = play from server (fast)
   if (song.filename) {
-    obj.url = `/bars/music/${song.filename}`
+    obj.url = musicUrl(`/bars/music/${song.filename}`)
     return obj
   }
 
@@ -100,7 +100,7 @@ async function playSong(song, index) {
     cover: s.cover,
     video_id: s.video_id,
     filename: s.filename || null,
-    url: s.filename ? `/bars/music/${s.filename}` : null
+    url: s.filename ? musicUrl(`/bars/music/${s.filename}`) : null
   }))
   // Set resolved URL for current song
   allSongs[index] = songObj

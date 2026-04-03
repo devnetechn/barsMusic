@@ -201,7 +201,7 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 import { getAllSongs, deleteSong } from '../utils/db'
 import { usePlayerStore } from '../stores/player'
 import { useLikesStore } from '../stores/likes'
-import { api } from '../utils/api'
+import { api, musicUrl } from '../utils/api'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
 import LikeButton from '../components/LikeButton.vue'
 
@@ -304,40 +304,42 @@ async function loadPlaylists() {
 }
 
 onMounted(async () => {
-  // Load server data first (fast), IndexedDB in background (slow)
+  // Load IndexedDB first (works offline), then server data in parallel
+  const localSongs = await getAllSongs().catch(() => [])
+
+  // Show local songs immediately (offline-ready)
+  if (localSongs.length) {
+    songs.value = localSongs
+  }
+
+  // Load server data in parallel
   const [songsRes, playlistRes, artistRes, albumRes] = await Promise.all([
-    api('/bars/api/songs.php').then(r => r.json()).catch(() => ({ songs: [] })),
+    api('/bars/api/songs.php').then(r => r.json()).catch(() => null),
     api('/bars/api/playlists.php').then(r => r.json()).catch(() => ({ playlists: [] })),
     api('/bars/api/artists.php').then(r => r.json()).catch(() => ({ artists: [] })),
     api('/bars/api/albums.php').then(r => r.json()).catch(() => ({ albums: [] }))
   ])
 
-  // Show server songs immediately
-  const serverSongs = songsRes.songs || []
-  songs.value = serverSongs.map(s => ({
-    id: `server_${s.id}`,
-    title: s.title,
-    artist: s.artist || 'Unknown Artist',
-    album: s.album || 'Unknown Album',
-    filename: s.filename,
-    cover: s.cover,
-    size: s.size,
-    url: `/bars/music/${s.filename}`,
-    addedAt: s.created_at
-  }))
+  // Merge server songs (if online)
+  if (songsRes && songsRes.songs?.length) {
+    const serverSongs = songsRes.songs
+    const localFilenames = new Set(localSongs.map(s => s.filename))
+    const serverMapped = serverSongs.filter(s => !localFilenames.has(s.filename)).map(s => ({
+      id: `server_${s.id}`,
+      title: s.title,
+      artist: s.artist || 'Unknown Artist',
+      album: s.album || 'Unknown Album',
+      filename: s.filename,
+      cover: s.cover,
+      size: s.size,
+      url: musicUrl(`/bars/music/${s.filename}`),
+      addedAt: s.created_at
+    }))
+    songs.value = [...localSongs, ...serverMapped]
+  }
 
   playlists.value = playlistRes.playlists || []
   artists.value = artistRes.artists || []
   albums.value = albumRes.albums || []
-
-  // Merge IndexedDB songs in background (won't block UI)
-  getAllSongs().then(localSongs => {
-    if (!localSongs.length) return
-    const serverFilenames = new Set(serverSongs.map(s => s.filename))
-    const newLocal = localSongs.filter(s => !serverFilenames.has(s.filename))
-    if (newLocal.length) {
-      songs.value = [...newLocal, ...songs.value]
-    }
-  }).catch(() => {})
 })
 </script>

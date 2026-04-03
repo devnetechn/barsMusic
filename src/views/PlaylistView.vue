@@ -83,7 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
 import { saveSong, getAudioBlob } from '../utils/db'
 import AddToPlaylist from '../components/AddToPlaylist.vue'
-import { api, fetchMusic, autoDownload } from '../utils/api'
+import { api, fetchMusic, autoDownload, musicUrl } from '../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,7 +146,7 @@ function buildSong(item) {
       artist: item.artist,
       cover: item.thumbnail,
       filename: item.filename || null,
-      url: item.filename ? `/bars/music/${item.filename}` : null
+      url: item.filename ? musicUrl(`/bars/music/${item.filename}`) : null
     }
   }
   // YouTube song not yet downloaded — will need stream URL

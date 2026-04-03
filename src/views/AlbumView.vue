@@ -51,7 +51,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
-import { api } from '../utils/api'
+import { api, musicUrl } from '../utils/api'
 import LikeButton from '../components/LikeButton.vue'
 
 const route = useRoute()
@@ -81,7 +81,7 @@ onMounted(async () => {
     const res = await api(`/bars/api/albums.php?id=${route.params.id}`)
     const data = await res.json()
     album.value = data.album
-    songs.value = (data.album?.songs || []).map(s => ({ ...s, url: `/bars/music/${s.filename}` }))
+    songs.value = (data.album?.songs || []).map(s => ({ ...s, url: musicUrl(`/bars/music/${s.filename}`) }))
   } catch {}
 })
 </script>

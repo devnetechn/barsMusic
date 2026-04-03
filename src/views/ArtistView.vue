@@ -61,7 +61,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
-import { api } from '../utils/api'
+import { api, musicUrl } from '../utils/api'
 import LikeButton from '../components/LikeButton.vue'
 
 const route = useRoute()
@@ -97,7 +97,7 @@ onMounted(async () => {
     artist.value = data
     songs.value = (data.songs || []).map(s => ({
       ...s,
-      url: `/bars/music/${s.filename}`
+      url: musicUrl(`/bars/music/${s.filename}`)
     }))
   } catch {}
 })
