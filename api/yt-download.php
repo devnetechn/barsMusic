@@ -84,10 +84,7 @@ if (!file_exists($outputPath)) {
         http_response_code(500);
         echo json_encode([
             'error' => 'Download failed',
-            'details' => implode("\n", array_slice($output, -3)),
-            '_debug_ffmpegDir' => $ffmpegDir,
-            '_debug_ffmpegArg' => $ffmpegArg,
-            '_debug_cmd' => $cmd
+            'details' => implode("\n", array_slice($output, -3))
         ]);
         exit;
     }
@@ -95,9 +92,38 @@ if (!file_exists($outputPath)) {
 
 $fileSize = filesize($outputPath);
 
+// Download cover image to server for faster loading
+$localCover = $cover;
+if ($cover && strpos($cover, 'http') === 0) {
+    $coverDir = __DIR__ . '/../covers/';
+    if (!is_dir($coverDir)) mkdir($coverDir, 0755, true);
+    $coverFile = $videoId . '.jpg';
+    $coverPath = $coverDir . $coverFile;
+
+    if (!file_exists($coverPath)) {
+        $ch = curl_init($cover);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        $imgData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && !empty($imgData)) {
+            file_put_contents($coverPath, $imgData);
+            $localCover = '/bars/covers/' . $coverFile;
+        }
+    } else {
+        $localCover = '/bars/covers/' . $coverFile;
+    }
+}
+
 // Save to user's library in DB
 $stmt = $db->prepare('INSERT INTO songs (user_id, title, artist, album, filename, cover, size, source, video_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-$stmt->execute([$userId, $title, $artist, 'YouTube', $outputFile, $cover, $fileSize, 'youtube', $videoId]);
+$stmt->execute([$userId, $title, $artist, 'YouTube', $outputFile, $localCover, $fileSize, 'youtube', $videoId]);
 
 echo json_encode([
     'success' => true,
@@ -105,5 +131,6 @@ echo json_encode([
     'filename' => $outputFile,
     'title' => $title,
     'url' => '/bars/music/' . $outputFile,
+    'cover' => $localCover,
     'size' => $fileSize
 ]);

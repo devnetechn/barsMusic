@@ -16,6 +16,10 @@ export default defineConfig({
       '/bars/music': {
         target: 'http://localhost',
         changeOrigin: true
+      },
+      '/bars/covers': {
+        target: 'http://localhost',
+        changeOrigin: true
       }
     }
   },
