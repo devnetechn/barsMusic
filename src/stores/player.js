@@ -92,29 +92,31 @@ export const usePlayerStore = defineStore('player', {
         }).catch(() => {})
       }).catch(() => {})
 
-      // Resolve audio URL
+      // Resolve audio URL — prefer IndexedDB (works offline), then server
       let url = song._preloadedUrl || null
+      let fromBlob = false
       if (!url) {
-        if (song.filename) {
-          // Has filename = on server
-          url = musicUrl(`/bars/music/${song.filename}`)
-        } else if (song.url) {
-          // Has URL (stream or direct link)
-          url = song.url
-        } else if (song.video_id || song.videoId) {
-          // YouTube song — fetch stream URL
-          try {
-            const { api: apiFn } = await import('../utils/api')
-            const vid = song.video_id || song.videoId
-            const res = await apiFn(`/bars/api/yt-stream.php?id=${vid}`)
-            const data = await res.json()
-            if (data.success) url = data.url
-          } catch {}
+        // Try IndexedDB first (works offline, saves bandwidth)
+        const blob = await getAudioBlob(song.id)
+        if (blob) {
+          url = URL.createObjectURL(blob)
+          fromBlob = true
         }
-        // Last resort: IndexedDB (offline)
+
         if (!url) {
-          const blob = await getAudioBlob(song.id)
-          if (blob) url = URL.createObjectURL(blob)
+          if (song.filename) {
+            url = musicUrl(`/bars/music/${song.filename}`)
+          } else if (song.url) {
+            url = song.url
+          } else if (song.video_id || song.videoId) {
+            try {
+              const { api: apiFn } = await import('../utils/api')
+              const vid = song.video_id || song.videoId
+              const res = await apiFn(`/bars/api/yt-stream.php?id=${vid}`)
+              const data = await res.json()
+              if (data.success) url = data.url
+            } catch {}
+          }
         }
         if (!url) {
           this.isPlaying = false
@@ -150,8 +152,32 @@ export const usePlayerStore = defineStore('player', {
             this.howl.once('unlock', () => this.howl.play())
           }
         },
-        onloaderror: (id, err) => {
+        onloaderror: async (id, err) => {
           console.error('Load error:', err)
+          // If server URL failed, try IndexedDB blob as fallback
+          if (!fromBlob && song.id) {
+            try {
+              const fallbackBlob = await getAudioBlob(song.id)
+              if (fallbackBlob) {
+                const fallbackUrl = URL.createObjectURL(fallbackBlob)
+                if (this.howl) this.howl.unload()
+                this.howl = new Howl({
+                  src: [fallbackUrl],
+                  html5: true,
+                  preload: true,
+                  volume: this.isMuted ? 0 : this.volume,
+                  onplay: () => { this.isPlaying = true; this.duration = this.howl.duration(); this._startProgress() },
+                  onpause: () => { this.isPlaying = false; this._stopProgress() },
+                  onstop: () => { this.isPlaying = false; this._stopProgress() },
+                  onend: () => { this._stopProgress(); this.onSongEnd() },
+                  onplayerror: () => { if (this.howl) this.howl.once('unlock', () => this.howl.play()) },
+                  onloaderror: () => { this.isPlaying = false }
+                })
+                this.howl.play()
+                return
+              }
+            } catch {}
+          }
           this.isPlaying = false
         }
       }

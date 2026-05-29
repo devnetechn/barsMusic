@@ -581,55 +581,40 @@ onMounted(async () => {
   const localSongs = await getAllSongs()
 
   // Also load songs from server and merge
+  let serverSongs = []
   try {
     const res = await api('/bars/api/songs.php')
     const data = await res.json()
-    const serverSongs = data.songs || []
-
-    if (serverSongs.length > 0) {
-      // Cache server songs for offline use
-      localStorage.setItem('bars_server_songs', JSON.stringify(serverSongs))
+    if (!data.error) {
+      serverSongs = data.songs || []
+      if (serverSongs.length > 0) {
+        localStorage.setItem('bars_server_songs', JSON.stringify(serverSongs))
+      }
     }
+  } catch { /* offline or error */ }
 
-    const localIds = new Set(localSongs.map(s => s.filename))
-    // Merge: local songs + server songs not already in local
-    songs.value = [
-      ...localSongs,
-      ...serverSongs.filter(s => !localIds.has(s.filename)).map(s => ({
-        id: `server_${s.id}`,
-        title: s.title,
-        artist: s.artist || 'Unknown Artist',
-        album: s.album || 'Unknown Album',
-        filename: s.filename,
-        cover: s.cover,
-        size: s.size,
-        url: musicUrl(`/bars/music/${s.filename}`),
-        addedAt: s.created_at
-      }))
-    ]
-  } catch {
-    // Offline — use cached server songs
-    let cachedServerSongs = []
+  // Fallback to cached server songs if none fetched
+  if (serverSongs.length === 0) {
     try {
-      cachedServerSongs = JSON.parse(localStorage.getItem('bars_server_songs') || '[]')
+      serverSongs = JSON.parse(localStorage.getItem('bars_server_songs') || '[]')
     } catch { /* ignore */ }
-
-    const localIds = new Set(localSongs.map(s => s.filename))
-    songs.value = [
-      ...localSongs,
-      ...cachedServerSongs.filter(s => !localIds.has(s.filename)).map(s => ({
-        id: `server_${s.id}`,
-        title: s.title,
-        artist: s.artist || 'Unknown Artist',
-        album: s.album || 'Unknown Album',
-        filename: s.filename,
-        cover: s.cover,
-        size: s.size,
-        url: musicUrl(`/bars/music/${s.filename}`),
-        addedAt: s.created_at
-      }))
-    ]
   }
+
+  const localIds = new Set(localSongs.map(s => s.filename))
+  songs.value = [
+    ...localSongs,
+    ...serverSongs.filter(s => !localIds.has(s.filename)).map(s => ({
+      id: `server_${s.id}`,
+      title: s.title,
+      artist: s.artist || 'Unknown Artist',
+      album: s.album || 'Unknown Album',
+      filename: s.filename,
+      cover: s.cover,
+      size: s.size,
+      url: musicUrl(`/bars/music/${s.filename}`),
+      addedAt: s.created_at
+    }))
+  ]
 
   // Load featured/trending
   loadFeatured()
@@ -638,30 +623,26 @@ onMounted(async () => {
   try {
     const res = await api('/bars/api/artists.php')
     const data = await res.json()
-    yourArtists.value = (data.artists || []).slice(0, 10)
+    if (!data.error) yourArtists.value = (data.artists || []).slice(0, 10)
   } catch {}
 
   // Load recently played from API
   try {
     const res = await api('/bars/api/history.php?limit=10')
     const data = await res.json()
-    if (data.success && Array.isArray(data.history)) {
+    if (!data.error && data.success && Array.isArray(data.history)) {
       recentlyPlayed.value = data.history
     }
-  } catch {
-    // Silently fail
-  }
+  } catch {}
 
   // Load top artists for Made For You mixes
   try {
     const res = await api('/bars/api/history.php?type=top_artists&limit=4')
     const data = await res.json()
-    if (data.success && Array.isArray(data.artists)) {
+    if (!data.error && data.success && Array.isArray(data.artists)) {
       topMixes.value = data.artists
     }
-  } catch {
-    // Silently fail
-  }
+  } catch {}
 })
 </script>
 

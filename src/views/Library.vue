@@ -315,13 +315,13 @@ onMounted(async () => {
   // Load server data in parallel
   const [songsRes, playlistRes, artistRes, albumRes] = await Promise.all([
     api('/bars/api/songs.php').then(r => r.json()).catch(() => null),
-    api('/bars/api/playlists.php').then(r => r.json()).catch(() => ({ playlists: [] })),
-    api('/bars/api/artists.php').then(r => r.json()).catch(() => ({ artists: [] })),
-    api('/bars/api/albums.php').then(r => r.json()).catch(() => ({ albums: [] }))
+    api('/bars/api/playlists.php').then(r => r.json()).catch(() => null),
+    api('/bars/api/artists.php').then(r => r.json()).catch(() => null),
+    api('/bars/api/albums.php').then(r => r.json()).catch(() => null)
   ])
 
-  // Merge server songs (if online)
-  if (songsRes && songsRes.songs?.length) {
+  // Merge server songs (if online — ignore offline placeholder responses)
+  if (songsRes && !songsRes.error && songsRes.songs?.length) {
     const serverSongs = songsRes.songs
     const localFilenames = new Set(localSongs.map(s => s.filename))
     const serverMapped = serverSongs.filter(s => !localFilenames.has(s.filename)).map(s => ({
@@ -338,8 +338,8 @@ onMounted(async () => {
     songs.value = [...localSongs, ...serverMapped]
   }
 
-  playlists.value = playlistRes.playlists || []
-  artists.value = artistRes.artists || []
-  albums.value = albumRes.albums || []
+  playlists.value = (playlistRes && !playlistRes.error) ? (playlistRes.playlists || []) : []
+  artists.value = (artistRes && !artistRes.error) ? (artistRes.artists || []) : []
+  albums.value = (albumRes && !albumRes.error) ? (albumRes.albums || []) : []
 })
 </script>

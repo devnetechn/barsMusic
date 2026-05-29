@@ -52,7 +52,6 @@ function fetchLrclib($title, $artist) {
         CURLOPT_SSL_VERIFYPEER => false
     ]);
     $response = curl_exec($ch);
-    curl_close($ch);
 
     $data = json_decode($response, true);
     if (!is_array($data) || empty($data)) return null;
@@ -103,7 +102,6 @@ function fetchLyricsOvh($title, $artist) {
     ]);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($httpCode !== 200) return null;
 
