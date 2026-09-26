@@ -30,6 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $songs = $stmt->fetchAll();
 
+        if (!$showAll && !$songs) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Album not found']);
+            exit;
+        }
+
         foreach ($songs as &$song) {
             $song['url'] = '/bars/music/' . $song['filename'];
         }

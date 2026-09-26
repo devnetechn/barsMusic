@@ -53,6 +53,10 @@ for ($i = 0; $i < count($files['name']); $i++) {
     }
 
     $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if (!in_array($ext, ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'], true)) {
+        $errors[] = ['file' => $name, 'error' => 'Unsupported file type'];
+        continue;
+    }
     $title = pathinfo($name, PATHINFO_FILENAME);
     $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title);
 

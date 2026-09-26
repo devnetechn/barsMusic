@@ -26,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ');
             $stmt->execute(['%' . $artist . '%', $userId]);
         }
-        $stmt->execute(['%' . $artist . '%']);
         $songs = $stmt->fetchAll();
 
         // Add URL for each song

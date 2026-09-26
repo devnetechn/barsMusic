@@ -1,0 +1,110 @@
+CREATE DATABASE IF NOT EXISTS bars_music CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE bars_music;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  role ENUM('admin','user') NOT NULL DEFAULT 'user',
+  remember_token CHAR(64) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_remember_token (remember_token)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS albums (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  artist VARCHAR(255) NOT NULL,
+  cover VARCHAR(500) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_album (name(150), artist(150))
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS songs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  artist VARCHAR(255) NOT NULL DEFAULT 'Unknown Artist',
+  album VARCHAR(255) NOT NULL DEFAULT 'Unknown Album',
+  album_id INT UNSIGNED NULL,
+  filename VARCHAR(255) NOT NULL,
+  cover VARCHAR(500) NULL,
+  size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  duration INT UNSIGNED NOT NULL DEFAULT 0,
+  source VARCHAR(20) NOT NULL DEFAULT 'upload',
+  video_id CHAR(11) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user (user_id),
+  INDEX idx_video (user_id, video_id),
+  INDEX idx_title (user_id, title(100)),
+  INDEX idx_artist (artist(100)),
+  INDEX idx_filename (filename(100)),
+  CONSTRAINT fk_songs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_songs_album FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS playlists (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  cover MEDIUMTEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user (user_id),
+  CONSTRAINT fk_playlists_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS playlist_songs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  playlist_id INT UNSIGNED NOT NULL,
+  song_id INT UNSIGNED NULL,
+  video_id CHAR(11) NULL,
+  title VARCHAR(255) NOT NULL DEFAULT '',
+  artist VARCHAR(255) NOT NULL DEFAULT '',
+  cover VARCHAR(500) NULL,
+  duration VARCHAR(20) NOT NULL DEFAULT '',
+  is_downloaded TINYINT(1) NOT NULL DEFAULT 0,
+  position INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_playlist (playlist_id, position),
+  CONSTRAINT fk_ps_playlist FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ps_song FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS liked_songs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  song_id VARCHAR(100) NOT NULL,
+  video_id VARCHAR(20) NULL,
+  title VARCHAR(255) NOT NULL DEFAULT '',
+  artist VARCHAR(255) NOT NULL DEFAULT '',
+  cover VARCHAR(500) NULL,
+  filename VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_song (user_id, song_id),
+  CONSTRAINT fk_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS play_history (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  song_id VARCHAR(100) NULL,
+  video_id VARCHAR(20) NULL,
+  title VARCHAR(255) NOT NULL,
+  artist VARCHAR(255) NOT NULL DEFAULT 'Unknown Artist',
+  cover VARCHAR(500) NULL,
+  played_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_played (user_id, played_at),
+  CONSTRAINT fk_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  username VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_read (is_read),
+  CONSTRAINT fk_feedback_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
