@@ -63,6 +63,12 @@ html, body {
   animation: slide-up 0.2s ease-out;
 }
 
+/* YouTube hqdefault thumbnails have black bars baked into the top/bottom; crop them out */
+img[src*="ytimg.com"],
+img[src*="/covers/"] {
+  transform: scale(1.34);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }

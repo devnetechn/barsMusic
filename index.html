@@ -20,16 +20,26 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
-    <script>
+    <script type="module">
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", async () => {
-          const reg = await navigator.serviceWorker.register("./sw.js");
-          reg.update();
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (!refreshing) { refreshing = true; window.location.reload(); }
+        if (import.meta.env.PROD) {
+          window.addEventListener("load", async () => {
+            const reg = await navigator.serviceWorker.register("./sw.js");
+            reg.update();
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (!refreshing) { refreshing = true; window.location.reload(); }
+            });
           });
-        });
+        } else {
+          // Dev server: a cached service worker serves stale modules/CSS, so remove it
+          navigator.serviceWorker.getRegistrations().then(async (regs) => {
+            const hadSW = regs.length > 0 || !!navigator.serviceWorker.controller;
+            await Promise.all(regs.map((r) => r.unregister()));
+            for (const k of await caches.keys()) await caches.delete(k);
+            if (hadSW) window.location.reload();
+          });
+        }
       }
     </script>
   </body>

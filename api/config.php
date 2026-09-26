@@ -99,6 +99,8 @@ function requireAuth() {
         echo json_encode(['error' => 'Login required']);
         exit;
     }
+    // Release the session lock so long requests (yt-dlp downloads) don't block other API calls
+    session_write_close();
 }
 
 function isAdmin() {

@@ -57,7 +57,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-sm text-white truncate">{{ playlist.name }}</p>
-            <p class="text-xs text-spotify-light truncate">{{ playlist.songIds?.length || 0 }} songs</p>
+            <p class="text-xs text-spotify-light truncate">{{ playlist.total || 0 }} songs</p>
           </div>
         </router-link>
       </div>
@@ -67,13 +67,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getAllPlaylists } from '../utils/db'
+import { api } from '../utils/api'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const playlists = ref([])
 
 onMounted(async () => {
-  playlists.value = await getAllPlaylists()
+  try {
+    const res = await api('/bars/api/playlists.php')
+    const data = await res.json()
+    playlists.value = data.playlists || []
+  } catch {
+    playlists.value = []
+  }
 })
 </script>
